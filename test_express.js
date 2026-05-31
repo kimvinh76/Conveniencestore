@@ -1,0 +1,1 @@
+const app = require('./backend/src/app'); const request = require('supertest'); request(app).get('/api/branch-dashboard?branch=HUE').expect(200).end((err, res) => { console.log(res.status, res.body); process.exit(0); });
