@@ -20,6 +20,7 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const modalRef = useRef(null);
+  const createModalRef = useRef(null);
 
   const totalAmount = useMemo(() => items.reduce((sum, item) => {
     const price = Number(item.unitPrice || 0);
@@ -104,6 +105,7 @@ export default function Page() {
       setItems([emptyItem()]);
       setNote("");
       setEmployeeId("");
+      createModalRef.current?.close();
       await loadInvoices();
     } catch (err) {
       setResult(`Lỗi: ${err.message || String(err)}`);
@@ -130,9 +132,12 @@ export default function Page() {
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Tác vụ Cục bộ</p>
             <h1 className="text-3xl font-bold text-slate-900">Quản lý hóa đơn</h1>
           </div>
-          <button className="btn-primary" onClick={() => loadInvoices()}>
-            {loading ? "Đang tải..." : "Tải lại danh sách"}
-          </button>
+          <div className="flex gap-3">
+            <button className="btn-primary" onClick={() => createModalRef.current?.showModal()}>+ Tạo hóa đơn</button>
+            <button className="btn-ghost border border-slate-200" onClick={() => loadInvoices()}>
+              {loading ? "Đang tải..." : "Tải lại"}
+            </button>
+          </div>
         </header>
 
         {error && (
@@ -141,98 +146,81 @@ export default function Page() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-          {/* Cột trái: Form tạo hóa đơn */}
-          <div className="flex flex-col gap-6 lg:col-span-1">
-            <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h2 className="text-xl font-bold text-slate-800 mb-5">Tạo hóa đơn mới</h2>
-              <form onSubmit={submitInvoice} className="flex flex-col gap-4">
-                <label>
-                  <span>Nhân viên lập hóa đơn</span>
-                  <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
-                    <option value="">Chọn nhân viên</option>
-                    {employees.map((e) => (
-                      <option key={e.MaNV} value={e.MaNV}>{`${e.MaNV} - ${e.HoTen}`}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-700">Danh sách sản phẩm</span>
-                    <button type="button" className="btn-ghost !py-1.5 !px-3 text-sm" onClick={addItem}>
-                      + Thêm dòng
-                    </button>
-                  </div>
-
-                  {items.map((item, idx) => (
-                    <div key={idx} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-500 uppercase">Sản phẩm #{idx + 1}</span>
-                        {items.length > 1 && (
-                          <button type="button" className="text-xs font-semibold text-red-600 hover:text-red-700" onClick={() => removeItem(idx)}>
-                            Xóa
-                          </button>
-                        )}
-                      </div>
-                      <label>
-                        <span>Mã sản phẩm</span>
-                        <input
-                          value={item.productCode}
-                          onChange={(e) => updateItem(idx, { productCode: e.target.value })}
-                          onBlur={() => autoFill(idx)}
-                          placeholder="Nhập mã rồi rời ô để tự điền"
-                          required
-                        />
-                      </label>
-                      <label>
-                        <span>Tên hàng</span>
-                        <input value={item.productName} readOnly className="bg-slate-100" />
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <label>
-                          <span>Đơn giá</span>
-                          <input type="number" value={item.unitPrice} onChange={(e) => updateItem(idx, { unitPrice: e.target.value })} />
-                        </label>
-                        <label>
-                          <span>Số lượng</span>
-                          <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} required />
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <label>
-                  <span>Ghi chú</span>
-                  <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Khuyến mãi cuối tuần..." />
-                </label>
-
-                <div className="flex items-center justify-between bg-teal-50 p-4 rounded-xl border border-teal-200">
-                  <span className="text-sm font-semibold text-slate-700">Tổng tiền</span>
-                  <span className="text-xl font-bold text-teal-600">{Number(totalAmount).toLocaleString("vi-VN")} đ</span>
-                </div>
-
-                <button type="submit" className="btn-primary mt-1">Thêm hóa đơn</button>
-              </form>
-            </section>
-
-            <section className="bg-slate-900 text-green-400 p-4 rounded-xl shadow-inner font-mono text-sm overflow-x-auto">
-              <h3 className="text-slate-400 mb-2 font-sans text-xs font-bold uppercase tracking-widest">Logs</h3>
-              <pre>{result}</pre>
-            </section>
+        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[500px]">
+          <h2 className="text-xl font-bold text-slate-800 mb-5">Lịch sử hóa đơn chi nhánh</h2>
+          <div className="table-wrap">
+            <DataTable rows={invoices} onRowClick={openDetails} />
           </div>
-
-          {/* Cột phải: Bảng dữ liệu */}
-          <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2 flex flex-col h-[calc(100vh-140px)] sticky top-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-5">Danh sách hóa đơn chi nhánh</h2>
-            <div className="table-wrap flex-1 overflow-y-auto">
-              <DataTable rows={invoices} onRowClick={openDetails} />
-            </div>
-          </section>
-        </div>
+        </section>
       </div>
 
+      {/* Modal Tạo hóa đơn */}
+      <dialog ref={createModalRef} className="modal w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-slate-800">Tạo hóa đơn mới tại {branch}</h2>
+          <button onClick={() => createModalRef.current?.close()} className="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        <form onSubmit={submitInvoice} className="p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Nhân viên lập hóa đơn</span>
+            <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required className="px-4 py-2 border rounded-lg">
+              <option value="">Chọn nhân viên</option>
+              {employees.map((e) => (
+                <option key={e.MaNV} value={e.MaNV}>{`${e.MaNV} - ${e.HoTen}`}</option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">Danh sách sản phẩm</span>
+              <button type="button" className="text-blue-600 text-sm font-bold" onClick={addItem}>+ Thêm dòng</button>
+            </div>
+            {items.map((item, idx) => (
+              <div key={idx} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Sản phẩm #{idx + 1}</span>
+                  {items.length > 1 && (
+                    <button type="button" className="text-xs font-semibold text-red-600" onClick={() => removeItem(idx)}>Xóa</button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    placeholder="Mã SP"
+                    value={item.productCode}
+                    onChange={(e) => updateItem(idx, { productCode: e.target.value })}
+                    onBlur={() => autoFill(idx)}
+                    className="px-3 py-2 border rounded-lg"
+                    required
+                  />
+                  <input value={item.productName} placeholder="Tên hàng" readOnly className="px-3 py-2 border rounded-lg bg-slate-100" />
+                  <input type="number" placeholder="Đơn giá" value={item.unitPrice} onChange={(e) => updateItem(idx, { unitPrice: e.target.value })} className="px-3 py-2 border rounded-lg" />
+                  <input type="number" min="1" placeholder="SL" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} className="px-3 py-2 border rounded-lg" required />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <input 
+            value={note} 
+            onChange={(e) => setNote(e.target.value)} 
+            placeholder="Ghi chú..." 
+            className="px-4 py-2 border rounded-lg"
+          />
+
+          <div className="flex items-center justify-between bg-teal-50 p-4 rounded-xl border border-teal-200 sticky bottom-0">
+            <span className="text-sm font-semibold text-slate-700">Tổng cộng</span>
+            <span className="text-xl font-bold text-teal-600">{Number(totalAmount).toLocaleString("vi-VN")} đ</span>
+          </div>
+
+          <div className="flex gap-3">
+            <button type="submit" className="btn-primary flex-1">Thêm hóa đơn</button>
+            <button type="button" className="btn-ghost border flex-1" onClick={() => createModalRef.current?.close()}>Hủy</button>
+          </div>
+        </form>
+      </dialog>
+
+      {/* Modal Chi tiết */}
       <dialog ref={modalRef} className="modal">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-xl font-bold text-slate-800">Chi tiết hóa đơn: <span className="text-teal-600">{detailsTitle}</span></h3>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
 import { apiFetch } from "@/components/api";
 import DataTable from "@/components/DataTable";
@@ -10,8 +10,11 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ productCode: "", productName: "", unitPrice: "" });
   const [isEditing, setIsEditing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [result, setResult] = useState("");
+  const [toast, setToast] = useState({ message: "", type: null });
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  const formModalRef = useRef(null);
+  const deleteModalRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -31,6 +34,11 @@ export default function Page() {
     }
   };
 
+  const showNotification = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: "", type: null }), 3000);
+  };
+
   useEffect(() => {
     load().catch(() => {});
   }, []);
@@ -38,21 +46,30 @@ export default function Page() {
   const handleAdd = () => {
     setForm({ productCode: "", productName: "", unitPrice: "" });
     setIsEditing(false);
-    setShowModal(true);
+    formModalRef.current?.showModal();
   };
 
   const handleEdit = (row) => {
     setForm({ productCode: row.productCode, productName: row.productName, unitPrice: row.unitPrice });
     setIsEditing(true);
-    setShowModal(true);
+    formModalRef.current?.showModal();
   };
 
   const handleDelete = async (code) => {
-    if (!confirm(`Xác nhận xóa sản phẩm ${code}?`)) return;
+    setProductToDelete(code);
+    deleteModalRef.current?.showModal();
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
     try {
-      await apiFetch(`/api/products/${code}?branch=CENTRAL`, { method: "DELETE" });
+      await apiFetch(`/api/products/${productToDelete}?branch=CENTRAL`, { method: "DELETE" });
+      deleteModalRef.current?.close();
+      showNotification(`Đã xóa sản phẩm ${productToDelete} thành công`);
       load();
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,9 +82,12 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      setShowModal(false);
+      formModalRef.current?.close();
+      showNotification(isEditing ? "Cập nhật sản phẩm thành công" : "Thêm sản phẩm mới thành công");
       load();
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
   };
 
   return (
@@ -112,39 +132,63 @@ export default function Page() {
         </section>
       </div>
 
-      {showModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box bg-white p-0 rounded-2xl overflow-hidden max-w-md">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="text-xl font-bold">{isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h3>
-              <button onClick={() => setShowModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold">Mã sản phẩm</span>
-                <input 
-                  value={form.productCode} 
-                  onChange={e => setForm({...form, productCode: e.target.value})} 
-                  readOnly={isEditing} 
-                  className="px-4 py-2 border rounded-lg bg-slate-50"
-                  required 
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold">Tên sản phẩm</span>
-                <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="px-4 py-2 border rounded-lg" required />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold">Giá bán (VND)</span>
-                <input type="number" value={form.unitPrice} onChange={e => setForm({...form, unitPrice: e.target.value})} className="px-4 py-2 border rounded-lg" required />
-              </label>
-              <div className="flex gap-3 mt-4">
-                <button type="submit" className="btn-primary flex-1">Lưu</button>
-                <button type="button" className="btn-ghost border flex-1" onClick={() => setShowModal(false)}>Hủy</button>
-              </div>
-            </form>
+      {/* Modal Thêm/Sửa */}
+      <dialog ref={formModalRef} className="modal w-full max-w-md bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-slate-800">{isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h3>
+          <button onClick={() => formModalRef.current?.close()} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-slate-700">Mã sản phẩm</span>
+            <input 
+              value={form.productCode} 
+              onChange={e => setForm({...form, productCode: e.target.value})} 
+              readOnly={isEditing} 
+              className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all ${isEditing ? "bg-slate-100 text-slate-500" : "bg-white"}`}
+              required 
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-slate-700">Tên sản phẩm</span>
+            <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all" required />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-slate-700">Giá bán (VND)</span>
+            <input type="number" value={form.unitPrice} onChange={e => setForm({...form, unitPrice: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all" required />
+          </label>
+          <div className="flex gap-3 mt-4">
+            <button type="submit" className="btn-primary flex-1 font-bold">Lưu thông tin</button>
+            <button type="button" className="btn-ghost border flex-1 font-bold" onClick={() => formModalRef.current?.close()}>Hủy bỏ</button>
           </div>
-        </dialog>
+        </form>
+      </dialog>
+
+      {/* Modal Xác nhận xóa */}
+      <dialog ref={deleteModalRef} className="modal w-full max-w-sm bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-red-50 text-red-600">
+          <h3 className="text-xl font-bold">Xác nhận xóa sản phẩm</h3>
+          <button onClick={() => deleteModalRef.current?.close()} className="text-red-400 hover:text-red-600 font-bold">✕</button>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-700 mb-6 text-center">Bạn có chắc chắn muốn xóa sản phẩm <strong className="text-slate-900">{productToDelete}</strong>? Thao tác này sẽ xóa dữ liệu liên quan tại tất cả chi nhánh.</p>
+          <div className="flex gap-3">
+            <button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl flex-1 transition-all">Xóa ngay</button>
+            <button onClick={() => deleteModalRef.current?.close()} className="btn-ghost border flex-1 font-bold">Hủy bỏ</button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Toast Notification */}
+      {toast.message && (
+        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-2xl shadow-2xl transition-all animate-bounce z-[100] flex items-center gap-3 border ${
+          toast.type === "error" ? "bg-white border-red-200 text-red-600" : "bg-white border-emerald-200 text-emerald-600"
+        }`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg ${toast.type === "error" ? "bg-red-100" : "bg-emerald-100"}`}>
+            {toast.type === "error" ? "✕" : "✓"}
+          </div>
+          <span className="font-bold text-sm">{toast.message}</span>
+        </div>
       )}
     </CentralLayout>
   );

@@ -143,13 +143,13 @@ export default function Page() {
 
         {/* MODAL CHI TIẾT DOANH THU 3 CHI NHÁNH */}
         {detailModal.open && (
-          <dialog className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-5xl bg-white p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold">Chi tiết doanh thu chi nhánh - {detailModal.type === 'daily' ? 'Theo Ngày' : 'Theo Tuần'}</h3>
-                <button className="btn-ghost" onClick={() => setDetailModal({ open: false, type: null })}>✕ Đóng</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 className="text-2xl font-bold text-slate-800">Chi tiết chi nhánh - {detailModal.type === 'daily' ? 'Theo Ngày' : 'Theo Tuần'}</h3>
+                <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setDetailModal({ open: false, type: null })}>✕</button>
               </div>
-              <div className="h-[500px]">
+              <div className="p-8 overflow-y-auto h-[600px]">
                 <DynamicChart type="line" 
                   labels={detailModal.type === 'daily' ? [...new Set(daily.map(d => d.date?.slice(0, 10)))] : [...new Set(weekly.map(w => `W${w.week}/${w.year}`))] }
                   datasets={[
@@ -161,47 +161,52 @@ export default function Page() {
                 />
               </div>
             </div>
-          </dialog>
+          </div>
         )}
 
         {/* MODAL RANKING NHÂN VIÊN/SẢN PHẨM */}
         {rankingModal.open && (
-          <dialog className="modal modal-open">
-            <div className="modal-box w-full max-w-2xl bg-white p-6">
-              <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h3 className="text-xl font-bold">{rankingModal.type === 'employees' ? 'Top Nhân viên xuất sắc chi nhánh' : 'Top Sản phẩm hot nhất chi nhánh'}</h3>
-                <button onClick={() => setRankingModal({ open: false, type: null })}>✕</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
+              <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 className="text-xl font-bold text-slate-800">{rankingModal.type === 'employees' ? 'Bảng vàng Nhân viên' : 'Sản phẩm Hot nhất'}</h3>
+                <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setRankingModal({ open: false, type: null })}>✕</button>
               </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    {rankingModal.type === 'employees' ? 
+              <div className="p-6">
+                <div className="table-wrap max-h-[60vh] overflow-y-auto border border-slate-100 rounded-xl">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-white shadow-sm">
+                      {rankingModal.type === 'employees' ? 
                       <tr><th>Chi nhánh</th><th>Nhân viên</th><th className="text-right">Doanh thu</th></tr> :
                       <tr><th>Chi nhánh</th><th>Sản phẩm</th><th className="text-right">Đã bán</th></tr>
-                    }
-                  </thead>
-                  <tbody>
-                    {rankingModal.type === 'employees' ? 
+                      }
+                    </thead>
+                    <tbody>
+                      {rankingModal.type === 'employees' ? 
+                      (topEmployees.length > 0 ?
                       topEmployees.map((e, idx) => (
                         <tr key={idx}>
                           <td><span className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">{e.branch}</span></td>
                           <td>{e.employeeName}</td>
                           <td className="text-right font-bold text-teal-600">{Number(e.totalRevenue).toLocaleString("vi-VN")} đ</td>
                         </tr>
-                      )) :
+                      )) : <tr><td colSpan="3" className="text-center py-10 text-slate-400">Không có dữ liệu tuần này</td></tr>)
+                      :
+                      (topProducts.length > 0 ?
                       topProducts.map((p, idx) => (
                         <tr key={idx}>
                           <td><span className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">{p.branch}</span></td>
                           <td>{p.productName}</td>
                           <td className="text-right font-bold text-blue-600">{p.totalSold}</td>
                         </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
+                      )) : <tr><td colSpan="3" className="text-center py-10 text-slate-400">Không có dữ liệu tuần này</td></tr>)
+                      }
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </dialog>
+          </div>
         )}
       </div>
     </BranchLayout>
