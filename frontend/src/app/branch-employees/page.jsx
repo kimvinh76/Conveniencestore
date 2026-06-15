@@ -5,7 +5,7 @@ import { apiFetch } from "@/components/api";
 import { useBranch } from "@/components/useBranch";
 
 export default function Page() {
-  const { branch } = useBranch({ requireLocal: true });
+  const { branch, auth } = useBranch({ requireLocal: true });
   const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState({ MaNV: "", HoTen: "", ChucVu: "" });
   const [isEditing, setIsEditing] = useState(false);
@@ -13,6 +13,8 @@ export default function Page() {
   const [result, setResult] = useState("Chưa có thao tác.");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const canManage = auth?.role === "ADMIN_CHI_NHANH" || auth?.role === "ADMIN_TOAN_BO";
 
   const formModalRef = useRef(null);
   const deleteModalRef = useRef(null);
@@ -108,9 +110,11 @@ export default function Page() {
             <h1 className="text-3xl font-bold text-slate-900">Quản lý nhân viên</h1>
           </div>
           <div className="flex gap-3">
-            <button className="btn-primary" onClick={openAddModal}>
-              + Thêm nhân viên
-            </button>
+            {canManage && (
+              <button className="btn-primary" onClick={openAddModal}>
+                + Thêm nhân viên
+              </button>
+            )}
             <button className="btn-ghost border border-slate-200" onClick={loadEmployees}>
               {loading ? "Đang tải..." : "Tải lại danh sách"}
             </button>
@@ -129,7 +133,7 @@ export default function Page() {
             <div className="table-wrap flex-1 overflow-y-auto">
               <table>
                 <thead>
-                  <tr><th>Mã NV</th><th>Họ tên</th><th>Chức vụ</th><th className="text-right">Thao tác</th></tr>
+                  <tr><th>Mã NV</th><th>Họ tên</th><th>Chức vụ</th>{canManage && <th className="text-right">Thao tác</th>}</tr>
                 </thead>
                 <tbody>
                   {employees.map(emp => (
@@ -137,13 +141,15 @@ export default function Page() {
                       <td className="font-medium text-slate-800">{emp.MaNV}</td>
                       <td>{emp.HoTen}</td>
                       <td>{emp.ChucVu}</td>
-                      <td className="text-right">
-                        <button onClick={() => openEditModal(emp)} className="text-blue-600 hover:text-blue-800 mr-3 text-sm font-semibold">Sửa</button>
-                        <button onClick={() => openDeleteModal(emp)} className="text-red-600 hover:text-red-800 text-sm font-semibold">Xóa</button>
-                      </td>
+                      {canManage && (
+                        <td className="text-right">
+                          <button onClick={() => openEditModal(emp)} className="text-blue-600 hover:text-blue-800 mr-3 text-sm font-semibold">Sửa</button>
+                          <button onClick={() => openDeleteModal(emp)} className="text-red-600 hover:text-red-800 text-sm font-semibold">Xóa</button>
+                        </td>
+                      )}
                     </tr>
                   ))}
-                  {employees.length === 0 && !loading && <tr><td colSpan="4" className="text-center py-8 text-slate-500">Chưa có dữ liệu</td></tr>}
+                  {employees.length === 0 && !loading && <tr><td colSpan={canManage ? "4" : "3"} className="text-center py-8 text-slate-500">Chưa có dữ liệu</td></tr>}
                 </tbody>
               </table>
             </div>

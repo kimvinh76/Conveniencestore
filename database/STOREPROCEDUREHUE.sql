@@ -2,7 +2,7 @@
 GO
 
 
-/* ===== PHẦN 1: VIEW TOÀN CỤC ===== */
+/* PHẦN 1: VIEW TOÀN CỤC */
 CREATE OR ALTER VIEW dbo.v_NhanVien_ToanQuoc AS
 SELECT MaNV, HoTen, ChucVu, ChiNhanh FROM dbo.NhanVien
 UNION ALL
@@ -11,7 +11,7 @@ UNION ALL
 SELECT MaNV, HoTen, ChucVu, ChiNhanh FROM [LINK_HANOI].[Store_HN].dbo.NhanVien;
 GO 
 SELECT * FROM dbo.v_NhanVien_ToanQuoc;
-
+GO
 
 CREATE OR ALTER VIEW dbo.v_HoaDonChiTiet_ToanQuoc AS
 SELECT hd.MaHD, hd.NgayTao, hd.ChiNhanh, hd.MaNV, ct.MaSP, ct.SoLuong, ct.DonGia,
@@ -29,7 +29,12 @@ SELECT hd.MaHD, hd.NgayTao, hd.ChiNhanh, hd.MaNV, ct.MaSP, ct.SoLuong, ct.DonGia
 FROM [LINK_HANOI].[Store_HN].dbo.HoaDon hd
 JOIN [LINK_HANOI].[Store_HN].dbo.ChiTietHoaDon ct ON hd.MaHD = ct.MaHD;
 GO
+
+
 SELECT * FROM dbo.v_HoaDonChiTiet_ToanQuoc;
+
+GO 
+
 
 CREATE OR ALTER VIEW dbo.v_TonKho_ToanQuoc AS
 SELECT MaSP, SoLuongTon, ChiNhanh FROM dbo.TonKho
@@ -41,7 +46,7 @@ GO
 
 SELECT * FROM dbo.v_TonKho_ToanQuoc;
 
-/* ===== PHẦN 2: PROC BÁO CÁO TOÀN CỤC ===== */
+/*  PHẦN 2: PROC BÁO CÁO TOÀN CỤC */
 CREATE OR ALTER PROCEDURE dbo.usp_DanhSachNhanVienToanHeThong
 AS
 BEGIN
@@ -182,7 +187,7 @@ GO
 EXEC dbo.usp_XemTonKhoTatCaChiNhanh;
  GO
 
-/* ===== PHẦN 3: PROC NGHIỆP VỤ CỤC BỘ  ===== */
+/*  PHẦN 3: PROC NGHIỆP VỤ CỤC BỘ   */
 CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachNhanVien
 AS
 BEGIN
@@ -190,6 +195,7 @@ BEGIN
     SELECT * FROM dbo.NhanVien;
 END;
 GO 
+
  EXEC dbo.usp_Local_DanhSachNhanVien;
 GO
 
@@ -271,47 +277,38 @@ GO
 CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachHoaDon
 AS
 BEGIN
+    
     SET NOCOUNT ON;
 
-    IF COL_LENGTH('dbo.HoaDon', 'MaNV') IS NOT NULL
-    BEGIN
-        SELECT
-            hd.MaHD,
-            SUM(CAST(ctd.SoLuong * ctd.DonGia AS DECIMAL(18,2))) AS TongTien,
-            COUNT(ctd.MaSP) AS SoMon,
-            hd.GhiChu,
-            hd.NgayTao,
-            hd.ChiNhanh,
-            hd.MaNV,
-            MAX(nv.HoTen) AS HoTenNhanVien
-        FROM dbo.HoaDon hd
-        LEFT JOIN dbo.ChiTietHoaDon ctd ON ctd.MaHD = hd.MaHD
-        LEFT JOIN dbo.NhanVien nv ON nv.MaNV = hd.MaNV
-        WHERE hd.ChiNhanh = 'HUE'
-        GROUP BY hd.MaHD, hd.GhiChu, hd.NgayTao, hd.ChiNhanh, hd.MaNV
-        ORDER BY hd.NgayTao DESC;
-    END
-    ELSE
-    BEGIN
-        SELECT
-            hd.MaHD,
-            SUM(CAST(ctd.SoLuong * ctd.DonGia AS DECIMAL(18,2))) AS TongTien,
-            COUNT(ctd.MaSP) AS SoMon,
-            hd.GhiChu,
-            hd.NgayTao,
-            hd.ChiNhanh,
-            NULL AS MaNV,
-            NULL AS HoTenNhanVien
-        FROM dbo.HoaDon hd
-        LEFT JOIN dbo.ChiTietHoaDon ctd ON ctd.MaHD = hd.MaHD
-        WHERE hd.ChiNhanh = 'HUE'
-        GROUP BY hd.MaHD, hd.GhiChu, hd.NgayTao, hd.ChiNhanh
-        ORDER BY hd.NgayTao DESC;
-    END
+  
+    SELECT
+        hd.MaHD,
+        SUM(CAST(ctd.SoLuong * ctd.DonGia AS DECIMAL(18,2))) AS TongTien,
+        COUNT(ctd.MaSP) AS SoMon,
+        hd.GhiChu,
+        hd.NgayTao,
+        hd.ChiNhanh,
+        hd.MaNV,
+        MAX(nv.HoTen) AS HoTenNhanVien
+    FROM dbo.HoaDon hd
+
+    LEFT JOIN dbo.ChiTietHoaDon ctd ON ctd.MaHD = hd.MaHD
+    LEFT JOIN dbo.NhanVien nv ON nv.MaNV = hd.MaNV
+
+    WHERE hd.ChiNhanh = 'HUE'
+
+    GROUP BY hd.MaHD, hd.GhiChu, hd.NgayTao, hd.ChiNhanh, hd.MaNV
+
+    ORDER BY hd.NgayTao DESC;
 END;
 GO
 EXEC dbo.usp_Local_DanhSachHoaDon;
  GO
+
+ SELECT * FROM dbo.HoaDon 
+WHERE CAST(NgayTao AS DATE) = '2026-05-18';
+
+go 
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_ChiTietHoaDon
     @MaHD VARCHAR(50)
@@ -333,7 +330,7 @@ BEGIN
       AND hd.ChiNhanh = 'HUE';
 END;
 GO 
- EXEC dbo.usp_Local_ChiTietHoaDon @MaHD = 'HD_1774933900848';
+ EXEC dbo.usp_Local_ChiTietHoaDon @MaHD = 'HD_1779107573838';
  GO
 
 
@@ -461,9 +458,9 @@ END;
 GO
 
  EXEC dbo.usp_Local_TaoHoaDonNhieuDong 
-     @MaHD = 'HD_taomoi ', 
-     @MaNV = 'H003', 
-     @GhiChu = N'Test tạo đơn hàng ', 
+     @MaHD = 'HD_taomoi999', 
+     @MaNV = 'H004', 
+     @GhiChu = N'Test tạo đơn hàng  ', 
      @ChiNhanhLap = 'HUE', 
      @ItemsJson = N'[
          {"MaSP": "MI_GOI", "SoLuong": 3}, 
@@ -471,10 +468,11 @@ GO
 		 {"MaSP": "SUA_HOP", "SoLuong": 4 }
      ]';
 GO 
-SELECT * FROM dbo.HoaDon WHERE MaHD = 'HD_Taomoi';
-SELECT * FROM dbo.ChiTietHoaDon WHERE MaHD = 'HD_Taomoi';
+SELECT * FROM dbo.HoaDon WHERE MaHD = 'HD_Taomoi999';
+SELECT * FROM dbo.ChiTietHoaDon WHERE MaHD = 'HD_Taomoi999';
 
 
+go 
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachTonKho
 AS
@@ -598,6 +596,410 @@ SELECT MaSP, SoLuongTon AS TonKho_Moi
 FROM dbo.TonKho 
 WHERE MaSP = 'MI_GOI' AND ChiNhanh = 'HUE';
 GO
+
+/* ===== KHUYẾN MÃI (CHỈ ĐỌC TỪ CENTRAL DB) ===== */
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachKhuyenMai
+AS 
+
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT MaKM, TenChuongTrinh, PhanTramGiam, NgayBatDau, NgayKetThuc
+    FROM dbo.KhuyenMai
+    ORDER BY NgayBatDau DESC, MaKM;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachKhuyenMaiHieuLuc
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT MaKM, TenChuongTrinh, PhanTramGiam, NgayBatDau, NgayKetThuc
+    FROM dbo.KhuyenMai
+    WHERE GETDATE() BETWEEN NgayBatDau AND NgayKetThuc
+    ORDER BY NgayBatDau DESC, MaKM;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_KiemTraKhuyenMai
+    @MaKM VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        MaKM,
+        TenChuongTrinh,
+        PhanTramGiam,
+        CASE
+            WHEN GETDATE() BETWEEN NgayBatDau AND NgayKetThuc THEN 1
+            ELSE 0
+        END AS IsActive
+    FROM dbo.KhuyenMai
+    WHERE MaKM = @MaKM;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachKhachHang
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT MaKH, HoTen, SoDienThoai, DiemTichLuy, ChiNhanhDK
+    FROM dbo.KhachHang
+    WHERE ChiNhanhDK = 'HUE'
+    ORDER BY MaKH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_ThemKhachHang
+    @MaKH VARCHAR(50),
+    @HoTen NVARCHAR(120),
+    @SoDienThoai VARCHAR(15) = NULL,
+    @DiemTichLuy INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@MaKH)), '') IS NULL
+        THROW 50000, N'Mã khách hàng không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@HoTen)), '') IS NULL
+        THROW 50000, N'Họ tên khách hàng không được để trống!', 1;
+
+    IF @DiemTichLuy < 0
+        THROW 50000, N'Điểm tích lũy phải >= 0!', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.KhachHang WHERE MaKH = @MaKH)
+        THROW 50001, N'Mã khách hàng đã tồn tại!', 1;
+
+    INSERT INTO dbo.KhachHang (MaKH, HoTen, SoDienThoai, DiemTichLuy, ChiNhanhDK)
+    VALUES (@MaKH, @HoTen, @SoDienThoai, @DiemTichLuy, 'HUE');
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_CapNhatKhachHang
+    @MaKH VARCHAR(50),
+    @HoTen NVARCHAR(120) = NULL,
+    @SoDienThoai VARCHAR(15) = NULL,
+    @DiemTichLuy INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.KhachHang
+    SET HoTen = COALESCE(NULLIF(LTRIM(RTRIM(@HoTen)), ''), HoTen),
+        SoDienThoai = COALESCE(NULLIF(LTRIM(RTRIM(@SoDienThoai)), ''), SoDienThoai),
+        DiemTichLuy = COALESCE(@DiemTichLuy, DiemTichLuy)
+    WHERE MaKH = @MaKH AND ChiNhanhDK = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy khách hàng để cập nhật!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaKhachHang
+    @MaKH VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM dbo.KhachHang
+    WHERE MaKH = @MaKH AND ChiNhanhDK = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy khách hàng để xóa!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachTaiKhoan
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT tk.TenDangNhap, tk.MaNV, nv.HoTen, tk.Quyen, tk.TrangThai
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE nv.ChiNhanh = 'HUE'
+    ORDER BY tk.TenDangNhap;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_ThemTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @MatKhau VARCHAR(255),
+    @MaNV VARCHAR(50),
+    @Quyen NVARCHAR(50),
+    @TrangThai BIT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNV = @MaNV AND ChiNhanh = 'HUE')
+        THROW 50001, N'Nhân viên không thuộc chi nhánh HUE!', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap)
+        THROW 50002, N'Tên đăng nhập đã tồn tại!', 1;
+
+    INSERT INTO dbo.TaiKhoan (TenDangNhap, MatKhau, MaNV, Quyen, TrangThai)
+    VALUES (@TenDangNhap, @MatKhau, @MaNV, @Quyen, COALESCE(@TrangThai, 1));
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_CapNhatTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @MatKhau VARCHAR(255) = NULL,
+    @Quyen NVARCHAR(50) = NULL,
+    @TrangThai BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE tk
+    SET MatKhau = COALESCE(NULLIF(LTRIM(RTRIM(@MatKhau)), ''), tk.MatKhau),
+        Quyen = COALESCE(NULLIF(LTRIM(RTRIM(@Quyen)), ''), tk.Quyen),
+        TrangThai = COALESCE(@TrangThai, tk.TrangThai)
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE tk.TenDangNhap = @TenDangNhap
+      AND nv.ChiNhanh = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để cập nhật!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_KhoaTaiKhoan
+    @TenDangNhap VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Quyen NVARCHAR(50);
+    SELECT @Quyen = Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap;
+    IF @Quyen IN (N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')
+        THROW 50003, N'Lỗi bảo mật: Không được thao tác khóa trên tài khoản Quản trị viên!', 1;
+
+    UPDATE tk
+    SET TrangThai = 0
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE tk.TenDangNhap = @TenDangNhap
+      AND nv.ChiNhanh = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để khóa!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_MoKhoaTaiKhoan
+    @TenDangNhap VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Quyen NVARCHAR(50);
+    SELECT @Quyen = Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap;
+    IF @Quyen IN (N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')
+        THROW 50003, N'Lỗi bảo mật: Không được thao tác mở khóa trên tài khoản Quản trị viên!', 1;
+
+    UPDATE tk
+    SET TrangThai = 1
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE tk.TenDangNhap = @TenDangNhap
+      AND nv.ChiNhanh = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để mở khóa!', 1;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaTaiKhoan
+    @TenDangNhap VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE tk
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE tk.TenDangNhap = @TenDangNhap
+      AND nv.ChiNhanh = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để xóa!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachPhieuNhap
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT MaPN, NgayNhap, ChiNhanh, TongTien, GhiChu
+    FROM dbo.PhieuNhap
+    WHERE ChiNhanh = 'HUE'
+    ORDER BY NgayNhap DESC, MaPN DESC;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_TaoPhieuNhap
+    @MaPN VARCHAR(50),
+    @GhiChu NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM dbo.PhieuNhap WHERE MaPN = @MaPN)
+        THROW 50001, N'Mã phiếu nhập đã tồn tại!', 1;
+
+    INSERT INTO dbo.PhieuNhap (MaPN, ChiNhanh, GhiChu, TongTien)
+    VALUES (@MaPN, 'HUE', @GhiChu, 0);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_CapNhatPhieuNhap
+    @MaPN VARCHAR(50),
+    @GhiChu NVARCHAR(255) = NULL,
+    @TongTien DECIMAL(18,2) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.PhieuNhap
+    SET GhiChu = COALESCE(NULLIF(LTRIM(RTRIM(@GhiChu)), ''), GhiChu),
+        TongTien = COALESCE(@TongTien, TongTien)
+    WHERE MaPN = @MaPN AND ChiNhanh = 'HUE';
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy phiếu nhập để cập nhật!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaPhieuNhap
+    @MaPN VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DELETE FROM dbo.ChiTietPhieuNhap WHERE MaPN = @MaPN;
+        DELETE FROM dbo.PhieuNhap WHERE MaPN = @MaPN AND ChiNhanh = 'HUE';
+
+        IF @@ROWCOUNT = 0
+            THROW 50001, N'Không tìm thấy phiếu nhập để xóa!', 1;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachChiTietPhieuNhap
+    @MaPN VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT ctpn.MaPN, ctpn.MaSP, hh.TenHang, ctpn.SoLuong, ctpn.DonGiaNhap,
+           CAST(ctpn.SoLuong * ctpn.DonGiaNhap AS DECIMAL(18,2)) AS ThanhTienNhap
+    FROM dbo.ChiTietPhieuNhap ctpn
+    INNER JOIN dbo.PhieuNhap pn ON pn.MaPN = ctpn.MaPN AND pn.ChiNhanh = 'HUE'
+    LEFT JOIN dbo.HangHoa hh ON hh.MaSP = ctpn.MaSP
+    WHERE ctpn.MaPN = @MaPN
+    ORDER BY ctpn.MaSP;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_ThemChiTietPhieuNhap
+    @MaPN VARCHAR(50),
+    @MaSP VARCHAR(50),
+    @SoLuong INT,
+    @DonGiaNhap DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.PhieuNhap WHERE MaPN = @MaPN AND ChiNhanh = 'HUE')
+        THROW 50001, N'Phiếu nhập không thuộc chi nhánh HUE!', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.HangHoa WHERE MaSP = @MaSP)
+        THROW 50002, N'Sản phẩm không tồn tại!', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO dbo.ChiTietPhieuNhap (MaPN, MaSP, SoLuong, DonGiaNhap)
+        VALUES (@MaPN, @MaSP, @SoLuong, @DonGiaNhap);
+
+        UPDATE dbo.PhieuNhap
+        SET TongTien = TongTien + CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2))
+        WHERE MaPN = @MaPN;
+
+        UPDATE dbo.TonKho
+        SET SoLuongTon = SoLuongTon + @SoLuong
+        WHERE MaSP = @MaSP AND ChiNhanh = 'HUE';
+
+        IF @@ROWCOUNT = 0
+            INSERT INTO dbo.TonKho (MaSP, SoLuongTon, ChiNhanh)
+            VALUES (@MaSP, @SoLuong, 'HUE');
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaChiTietPhieuNhap
+    @MaPN VARCHAR(50),
+    @MaSP VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @SoLuong INT, @DonGiaNhap DECIMAL(10,2);
+
+        SELECT @SoLuong = SoLuong, @DonGiaNhap = DonGiaNhap
+        FROM dbo.ChiTietPhieuNhap
+        WHERE MaPN = @MaPN AND MaSP = @MaSP;
+
+        IF @SoLuong IS NULL
+            THROW 50001, N'Không tìm thấy chi tiết phiếu nhập để xóa!', 1;
+
+        DELETE FROM dbo.ChiTietPhieuNhap WHERE MaPN = @MaPN AND MaSP = @MaSP;
+
+        UPDATE dbo.PhieuNhap
+        SET TongTien = CASE WHEN TongTien - CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2)) < 0 THEN 0 ELSE TongTien - CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2)) END
+        WHERE MaPN = @MaPN;
+
+        UPDATE dbo.TonKho
+        SET SoLuongTon = SoLuongTon - @SoLuong
+        WHERE MaSP = @MaSP AND ChiNhanh = 'HUE';
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
+
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_DashboardTongQuan
 AS

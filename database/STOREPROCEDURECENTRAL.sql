@@ -84,6 +84,10 @@ EXEC dbo.usp_Central_ThemHangHoaMoi @MaSP = 'SP_TEST_01', @TenHang = N'Sản ph�
 GO
 
 
+SELECT MaSP, SoLuongTon, ChiNhanh 
+FROM dbo.TonKho 
+WHERE MaSP = 'SP_TEST_01'; 
+GO
 
 
 CREATE OR ALTER PROCEDURE dbo.usp_Central_CapNhatHangHoa
@@ -245,7 +249,7 @@ BEGIN
             SET SoLuongTon = SoLuongTon + @p_SoLuong
             WHERE MaSP = @p_MaSP AND ChiNhanh = @p_ChiNhanh;
 
-            -- Nếu đích chưa có sản phẩm này, tự động tạo mới
+         
             IF @@ROWCOUNT = 0
             BEGIN
                 INSERT INTO [' + @DestServer + '].[' + @DestDB + '].dbo.TonKho (MaSP, SoLuongTon, ChiNhanh)
@@ -288,6 +292,338 @@ GO
 
 
 
+  /* ===== PROC QUẢN LÝ TÀI KHOẢN TOÀN HỆ THỐNG ===== */
+
+-- Xem tài khoản từ linked server (3 chi nhánh)
+CREATE OR ALTER PROCEDURE dbo.usp_Central_DanhSachTaiKhoanToanBo
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Tài khoản Central trước
+    SELECT tk.TenDangNhap, tk.MaNV, nv.HoTen, tk.Quyen, tk.TrangThai, nv.ChiNhanh
+    FROM dbo.TaiKhoan tk
+    INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE nv.ChiNhanh = 'CENTRAL'
+
+    UNION ALL
+
+    -- Tài khoản từ HUE (nếu có linked server)
+    SELECT tk.TenDangNhap, tk.MaNV, nv.HoTen, tk.Quyen, tk.TrangThai, nv.ChiNhanh
+    FROM [HUE_SERVER].[Store_H].dbo.TaiKhoan tk
+    INNER JOIN [HUE_SERVER].[Store_H].dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE nv.ChiNhanh = 'HUE'
+
+    UNION ALL
+
+    -- Tài khoản từ SAIGON (nếu có linked server)
+    SELECT tk.TenDangNhap, tk.MaNV, nv.HoTen, tk.Quyen, tk.TrangThai, nv.ChiNhanh
+    FROM [SG_SERVER].[Store_SG].dbo.TaiKhoan tk
+    INNER JOIN [SG_SERVER].[Store_SG].dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE nv.ChiNhanh = 'SAIGON'
+
+    UNION ALL
+
+    -- Tài khoản từ HANOI (nếu có linked server)
+    SELECT tk.TenDangNhap, tk.MaNV, nv.HoTen, tk.Quyen, tk.TrangThai, nv.ChiNhanh
+    FROM [HN_SERVER].[Store_HN].dbo.TaiKhoan tk
+    INNER JOIN [HN_SERVER].[Store_HN].dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+    WHERE nv.ChiNhanh = 'HANOI'
+
+    ORDER BY ChiNhanh, TenDangNhap;
+END;
+GO
+
+-- Tạo tài khoản tại CENTRAL (chỉ cho ADMIN_TOAN_BO)
+CREATE OR ALTER PROCEDURE dbo.usp_Central_ThemTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @MatKhau VARCHAR(255),
+    @MaNV VARCHAR(50),
+    @Quyen NVARCHAR(50),
+    @TrangThai BIT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@MatKhau)), '') IS NULL
+        THROW 50000 , N'Mật khẩu không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@MaNV)), '') IS NULL
+        THROW 50000, N'Mã nhân viên không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@Quyen)), '') IS NULL
+        THROW 50000, N'Quyền không được để trống!', 1;
+
+    IF @Quyen NOT IN (N'NHAN_VIEN', N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')
+        THROW 50000, N'Quyền không hợp lệ! Chỉ chấp nhận: NHAN_VIEN, ADMIN_CHI_NHANH, ADMIN_TOAN_BO', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNV = @MaNV)
+        THROW 50001, N'Nhân viên không tồn tại trong hệ thống!', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap)
+        THROW 50002, N'Tên đăng nhập đã tồn tại!', 1;
+
+    INSERT INTO dbo.TaiKhoan (TenDangNhap, MatKhau, MaNV, Quyen, TrangThai)
+    VALUES (@TenDangNhap, @MatKhau, @MaNV, @Quyen, COALESCE(@TrangThai, 1));
+END;
+GO
+
+-- Cập nhật tài khoản CENTRAL (quyền, trạng thái, mật khẩu)
+CREATE OR ALTER PROCEDURE dbo.usp_Central_CapNhatTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @MatKhau VARCHAR(255) = NULL,
+    @Quyen NVARCHAR(50) = NULL,
+    @TrangThai BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    UPDATE dbo.TaiKhoan
+    SET MatKhau = COALESCE(NULLIF(LTRIM(RTRIM(@MatKhau)), ''), MatKhau),
+        Quyen = COALESCE(NULLIF(LTRIM(RTRIM(@Quyen)), ''), Quyen),
+        TrangThai = COALESCE(@TrangThai, TrangThai)
+    WHERE TenDangNhap = @TenDangNhap;
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để cập nhật!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Central_KhoaTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @ChiNhanh VARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@ChiNhanh)), '') IS NULL
+        THROW 50000, N'Chi nhánh không được để trống!', 1;
+
+    DECLARE @Quyen NVARCHAR(50);
+    SELECT @Quyen = Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap;
+    IF @Quyen IN (N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')
+        THROW 50003, N'Lỗi bảo mật: Không được phép khóa tài khoản Quản trị viên!', 1;
+
+    -- 1. BẮT BUỘC CẬP NHẬT TẠI CENTRAL TRƯỚC ĐỂ CHẶN LOGIN TỨC THÌ
+    UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap;
+
+    -- 2. ĐẨY LỆNH XUỐNG CÁC CHI NHÁNH QUA LINKED SERVER ĐỂ CẬP NHẬT TỨC THÌ BÊN DƯỚI
+    IF @ChiNhanh = 'HUE'
+    BEGIN
+        UPDATE [HUE_SERVER].[Store_H].dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'SAIGON'
+    BEGIN
+        UPDATE [SG_SERVER].[Store_SG].dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'HANOI'
+    BEGIN
+        UPDATE [HN_SERVER].[Store_HN].dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap;
+    END
+
+    IF @@ROWCOUNT = 0
+        THROW 50002, N'Không tìm thấy tài khoản để khóa!', 1;
+END;
+GO
+
+-- Mở khóa tài khoản
+CREATE OR ALTER PROCEDURE dbo.usp_Central_MoKhoaTaiKhoan
+    @TenDangNhap VARCHAR(50),
+    @ChiNhanh VARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@ChiNhanh)), '') IS NULL
+        THROW 50000, N'Chi nhánh không được để trống!', 1;
+
+    DECLARE @Quyen NVARCHAR(50);
+    SELECT @Quyen = Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap;
+    IF @Quyen IN (N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')
+        THROW 50003, N'Lỗi bảo mật: Không được phép thao tác mở khóa trên tài khoản Quản trị viên!', 1;
+
+    -- 1. BẮT BUỘC CẬP NHẬT TẠI CENTRAL TRƯỚC ĐỂ CHO PHÉP LOGIN TỨC THÌ
+    UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap;
+
+    -- 2. ĐẨY LỆNH XUỐNG CÁC CHI NHÁNH QUA LINKED SERVER
+    IF @ChiNhanh = 'HUE'
+    BEGIN
+        UPDATE [HUE_SERVER].[Store_H].dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'SAIGON'
+    BEGIN
+        UPDATE [SG_SERVER].[Store_SG].dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'HANOI'
+    BEGIN
+        UPDATE [HN_SERVER].[Store_HN].dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap;
+    END
+
+    IF @@ROWCOUNT = 0
+        THROW 50002, N'Không tìm thấy tài khoản để mở khóa!', 1;
+END;
+GO
+
+
+-- Reset mật khẩu (dùng cho cả CENTRAL và linked branches)
+CREATE OR ALTER PROCEDURE dbo.usp_Central_ResetMatKhau
+    @TenDangNhap VARCHAR(50),
+    @MatKhauMoi VARCHAR(255),
+    @ChiNhanh VARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@MatKhauMoi)), '') IS NULL
+        THROW 50000, N'Mật khẩu mới không được để trống!', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@ChiNhanh)), '') IS NULL
+        THROW 50000, N'Chi nhánh không được để trống!', 1;
+
+    IF @ChiNhanh = 'CENTRAL'
+    BEGIN
+        UPDATE dbo.TaiKhoan SET MatKhau = @MatKhauMoi WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'HUE'
+    BEGIN
+        UPDATE [HUE_SERVER].[Store_H].dbo.TaiKhoan SET MatKhau = @MatKhauMoi WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'SAIGON'
+    BEGIN
+        UPDATE [SG_SERVER].[Store_SG].dbo.TaiKhoan SET MatKhau = @MatKhauMoi WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE IF @ChiNhanh = 'HANOI'
+    BEGIN
+        UPDATE [HN_SERVER].[Store_HN].dbo.TaiKhoan SET MatKhau = @MatKhauMoi WHERE TenDangNhap = @TenDangNhap;
+    END
+    ELSE
+        THROW 50001, N'Chi nhánh không hợp lệ!', 1;
+
+    IF @@ROWCOUNT = 0
+        THROW 50002, N'Không tìm thấy tài khoản để reset mật khẩu!', 1;
+END;
+GO
+
+-- Xóa tài khoản khỏi CENTRAL
+CREATE OR ALTER PROCEDURE dbo.usp_Central_XoaTaiKhoan
+    @TenDangNhap VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@TenDangNhap)), '') IS NULL
+        THROW 50000, N'Tên đăng nhập không được để trống!', 1;
+
+    DELETE FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap;
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy tài khoản để xóa!', 1;
+END;
+GO
+
+
+  CREATE OR ALTER PROCEDURE dbo.usp_Central_DanhSachKhuyenMai
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT MaKM, TenChuongTrinh, PhanTramGiam, NgayBatDau, NgayKetThuc
+    FROM dbo.KhuyenMai
+    ORDER BY NgayBatDau DESC, MaKM;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Central_DanhSachKhuyenMaiHieuLuc
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT MaKM, TenChuongTrinh, PhanTramGiam, NgayBatDau, NgayKetThuc
+    FROM dbo.KhuyenMai
+    WHERE GETDATE() BETWEEN NgayBatDau AND NgayKetThuc
+    ORDER BY NgayBatDau DESC, MaKM;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Central_ThemKhuyenMai
+    @MaKM VARCHAR(50),
+    @TenChuongTrinh NVARCHAR(150),
+    @PhanTramGiam INT,
+    @NgayBatDau DATETIME2,
+    @NgayKetThuc DATETIME2
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@MaKM)), '') IS NULL
+        THROW 50000, N'Mã khuyến mãi không được để trống!', 1;
+    IF NULLIF(LTRIM(RTRIM(@TenChuongTrinh)), '') IS NULL
+        THROW 50000, N'Tên chương trình không được để trống!', 1;
+    IF @PhanTramGiam < 0 OR @PhanTramGiam > 100
+        THROW 50000, N'Phần trăm giảm phải từ 0 đến 100!', 1;
+    IF @NgayKetThuc < @NgayBatDau
+        THROW 50000, N'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!', 1;
+    IF EXISTS (SELECT 1 FROM dbo.KhuyenMai WHERE MaKM = @MaKM)
+        THROW 50001, N'Mã khuyến mãi đã tồn tại!', 1;
+
+    INSERT INTO dbo.KhuyenMai (MaKM, TenChuongTrinh, PhanTramGiam, NgayBatDau, NgayKetThuc)
+    VALUES (@MaKM, @TenChuongTrinh, @PhanTramGiam, @NgayBatDau, @NgayKetThuc);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Central_CapNhatKhuyenMai
+    @MaKM VARCHAR(50),
+    @TenChuongTrinh NVARCHAR(150) = NULL,
+    @PhanTramGiam INT = NULL,
+    @NgayBatDau DATETIME2 = NULL,
+    @NgayKetThuc DATETIME2 = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.KhuyenMai
+    SET TenChuongTrinh = COALESCE(NULLIF(LTRIM(RTRIM(@TenChuongTrinh)), ''), TenChuongTrinh),
+        PhanTramGiam = COALESCE(@PhanTramGiam, PhanTramGiam),
+        NgayBatDau = COALESCE(@NgayBatDau, NgayBatDau),
+        NgayKetThuc = COALESCE(@NgayKetThuc, NgayKetThuc)
+    WHERE MaKM = @MaKM;
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy khuyến mãi để cập nhật!', 1;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.usp_Central_XoaKhuyenMai
+    @MaKM VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM dbo.KhuyenMai
+    WHERE MaKM = @MaKM;
+
+    IF @@ROWCOUNT = 0
+        THROW 50001, N'Không tìm thấy khuyến mãi để xóa!', 1;
+END;
+GO
+
+
+
 
 
 
@@ -310,7 +646,7 @@ END;
 GO 
 EXECUTE dbo.usp_Central_DoanhThuQuocGia;
 
-
+go
 CREATE OR ALTER PROCEDURE dbo.usp_Central_DoanhThuVaSoDon_TheoNgay
 AS
 BEGIN
@@ -329,7 +665,7 @@ BEGIN
 END;
 GO
 EXECUTE dbo.usp_Central_DoanhThuVaSoDon_TheoNgay;
-
+go
 CREATE OR ALTER PROCEDURE dbo.usp_Central_DoanhThuVaSoDon_TheoTuan
 AS
 BEGIN
@@ -349,7 +685,7 @@ BEGIN
 END;
 GO 
  EXEC dbo.usp_Central_DoanhThuVaSoDon_TheoTuan;
-
+ go 
 CREATE OR ALTER PROCEDURE dbo.usp_Central_NhanVienBanTotNhatTuan
 AS
 BEGIN
@@ -379,6 +715,8 @@ BEGIN
 END;
 GO
  EXEC dbo.usp_Central_NhanVienBanTotNhatTuan;
+ go 
+
 CREATE OR ALTER PROCEDURE dbo.usp_Central_SanPhamBanChayNhat_MoiChiNhanh
 AS
 BEGIN
@@ -431,4 +769,3 @@ END;
 GO
 
  EXEC dbo.usp_Central_SoSanhDoanhThuTuan;
-

@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 
 export const metadata = {
   title: "DDBMS Web",
@@ -14,10 +15,10 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
           rel="stylesheet"
         />
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       </head>
       <body>
         {children}
+        <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </body>
     </html>
   );

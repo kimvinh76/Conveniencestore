@@ -6,11 +6,14 @@ import { useBranch } from "@/components/useBranch";
 import DataTable from "@/components/DataTable";
 
 export default function Page() {
-  const { branch } = useBranch({ requireLocal: true });
+  const { branch, auth } = useBranch({ requireLocal: true });
   const [inventory, setInventory] = useState([]);
   const [updateForm, setUpdateForm] = useState({ productCode: "", quantity: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Kiểm tra quyền: Chỉ hiển thị form sửa nếu là Admin
+  const canUpdate = auth?.role === "ADMIN_CHI_NHANH" || auth?.role === "ADMIN_TOAN_BO";
 
   const loadInventory = async () => {
     if (!branch) return;
@@ -82,37 +85,39 @@ export default function Page() {
           </div>
         )}
 
-        {/* Thanh cập nhật tồn kho nhanh (Toolbar) */}
-        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-end gap-6">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-slate-700">Mã sản phẩm (Chọn từ bảng)</span>
-              <input 
-                value={updateForm.productCode} 
-                readOnly 
-                placeholder="Click vào một dòng bên dưới..."
-                className="px-4 py-2 border rounded-lg bg-slate-100 text-slate-600 outline-none cursor-default" 
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-slate-700">Số lượng tồn mới</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => adjustQty(-1)} type="button" className="px-3 py-2 bg-slate-200 rounded-lg hover:bg-slate-300 transition-colors font-bold">-</button>
+        {/* Thanh cập nhật tồn kho nhanh (Toolbar) - ẨN NẾU LÀ NHÂN VIÊN */}
+        {canUpdate && (
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-end gap-6">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Mã sản phẩm (Chọn từ bảng)</span>
                 <input 
-                  type="number" 
-                  value={updateForm.quantity} 
-                  onChange={e => setUpdateForm({...updateForm, quantity: e.target.value})} 
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-center" 
+                  value={updateForm.productCode} 
+                  readOnly 
+                  placeholder="Click vào một dòng bên dưới..."
+                  className="px-4 py-2 border rounded-lg bg-slate-100 text-slate-600 outline-none cursor-default" 
                 />
-                <button onClick={() => adjustQty(1)} type="button" className="px-3 py-2 bg-slate-200 rounded-lg hover:bg-slate-300 transition-colors font-bold">+</button>
-              </div>
-              
-            </label> 
-          </div>
-          <button onClick={handleUpdate} disabled={!updateForm.productCode} className="btn-primary h-[42px] px-8 disabled:bg-slate-300 disabled:cursor-not-allowed">
-            Xác nhận cập nhật 
-          </button>
-        </section>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Số lượng tồn mới</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => adjustQty(-1)} type="button" className="px-3 py-2 bg-slate-200 rounded-lg hover:bg-slate-300 transition-colors font-bold">-</button>
+                  <input 
+                    type="number" 
+                    value={updateForm.quantity} 
+                    onChange={e => setUpdateForm({...updateForm, quantity: e.target.value})} 
+                    className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-center" 
+                  />
+                  <button onClick={() => adjustQty(1)} type="button" className="px-3 py-2 bg-slate-200 rounded-lg hover:bg-slate-300 transition-colors font-bold">+</button>
+                </div>
+                
+              </label> 
+            </div>
+            <button onClick={handleUpdate} disabled={!updateForm.productCode} className="btn-primary h-[42px] px-8 disabled:bg-slate-300 disabled:cursor-not-allowed">
+              Xác nhận cập nhật 
+            </button>
+          </section>
+        )}
 
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[500px]">
           <h2 className="text-xl font-bold text-slate-800 mb-5">Danh sách tồn kho thực tế</h2>
