@@ -1,13 +1,12 @@
 "use client";
 import { useState } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
-import { apiFetch } from "@/components/api";
+import { apiFetch } from "@/components/api"; //
+import { useToast } from "@/contexts/ToastContext";
 
 export default function Page() {
   const [result, setResult] = useState("Chưa có thao tác.");
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ message: "", type: null });
-
   const onSubmit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
@@ -34,11 +33,7 @@ export default function Page() {
       setLoading(false);
     }
   };
-
-  const showNotification = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast({ message: "", type: null }), 3000);
-  };
+  const showNotification = useToast();
 
   return (
     <CentralLayout active="transfer">
@@ -89,17 +84,6 @@ export default function Page() {
         </section>
       </div>
 
-      {/* Toast Notification */}
-      {toast.message && (
-        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-2xl shadow-2xl transition-all animate-bounce z-[100] flex items-center gap-3 border ${
-          toast.type === "error" ? "bg-white border-red-200 text-red-600" : "bg-white border-emerald-200 text-emerald-600"
-        }`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg ${toast.type === "error" ? "bg-red-100" : "bg-emerald-100"}`}>
-            {toast.type === "error" ? "✕" : "✓"}
-          </div>
-          <span className="font-bold text-sm">{toast.message}</span>
-        </div>
-      )}
     </CentralLayout>
   );
 }

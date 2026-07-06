@@ -24,7 +24,7 @@ export default function Page() {
     return (
       <BranchLayout active="accounts">
         <div className="bg-red-50 text-red-700 p-8 rounded-2xl border border-red-200 text-center mt-10">
-          <h2 className="text-3xl font-bold mb-3">⛔ Truy cập bị từ chối</h2>
+          <h2 className="text-3xl font-bold mb-3"> Truy cập bị từ chối</h2>
           <p className="text-lg">Bạn không có quyền xem trang Quản lý tài khoản chi nhánh.</p>
         </div>
       </BranchLayout>

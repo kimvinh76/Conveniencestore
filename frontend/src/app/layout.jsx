@@ -1,5 +1,6 @@
 import "./globals.css";
 import Script from "next/script";
+import { ToastProvider } from "@/contexts/ToastContext";
 
 export const metadata = {
   title: "DDBMS Web",
@@ -17,8 +18,10 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        {children}
-        <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
+        <ToastProvider>
+          {children}
+          <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
+        </ToastProvider>
       </body>
     </html>
   );

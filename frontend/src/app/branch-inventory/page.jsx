@@ -20,8 +20,28 @@ export default function Page() {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiFetch(`/api/inventory?branch=${branch}`);
-      setInventory(Array.isArray(result) ? result : []);
+      // Gọi song song 2 API để lấy cả Tồn kho và Thông tin sản phẩm
+      const [invData, prodData] = await Promise.all([
+        apiFetch(`/api/inventory?branch=${branch}`),
+        apiFetch(`/api/products?branch=${branch}`)
+      ]);
+      
+      const invList = Array.isArray(invData) ? invData : [];
+      const prodList = Array.isArray(prodData) ? prodData : [];
+
+      // Gộp thông tin: Tên sản phẩm, Giá (từ prodList) + Số lượng (từ invList)
+      const merged = prodList.map(prod => {
+        const pCode = prod.productCode || prod.MaSP;
+        const invItem = invList.find(i => (i.productCode || i.MaSP) === pCode);
+        return { 
+          productCode: pCode, 
+          productName: prod.productName || prod.TenHang, 
+          unitPrice: prod.unitPrice ?? prod.Gia, 
+          quantity: invItem ? (invItem.quantity || invItem.SoLuongTon || 0) : 0 
+        };
+      });
+
+      setInventory(merged);
     } catch (err) {
       setError(err.message || String(err));
     } finally {
@@ -122,7 +142,7 @@ export default function Page() {
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[500px]">
           <h2 className="text-xl font-bold text-slate-800 mb-5">Danh sách tồn kho thực tế</h2>
           <div className="table-wrap flex-1 overflow-y-auto">
-            <DataTable rows={inventory} columns={["productCode", "quantity"]} onRowClick={handleRowClick} />
+            <DataTable rows={inventory} onRowClick={handleRowClick} />
           </div>
         </section>
       </div>

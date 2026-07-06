@@ -33,13 +33,47 @@ async function createAccount(payload) {
     .execute("dbo.usp_Central_ThemTaiKhoan");
   return { TenDangNhap: payload.TenDangNhap, MaNV: payload.MaNV, Quyen: payload.Quyen };
 }
-
+ 
 /**
  * Cập nhật tài khoản CENTRAL (quyền, trạng thái, mật khẩu)
  */
-async function updateAccount(username, payload) {
+async function updateAccount(username, payload, requestingUserAuth) {
   if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
+
+  const accountInfoResult = await pool.request()
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .query(`
+      SELECT tk.MaNV, nv.ChiNhanh
+      FROM dbo.TaiKhoan tk
+      INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+      WHERE tk.TenDangNhap = @TenDangNhap
+    `);
+
+  if (!accountInfoResult.recordset.length) {
+    throw new Error("Account not found for update.");
+  }
+  const accountBranch = accountInfoResult.recordset[0].ChiNhanh;
+
+  // Lấy thông tin tài khoản hiện tại từ CentralDB để kiểm tra quyền
+  const currentAccountResult = await pool.request()
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .query(`SELECT Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap`);
+  const currentAccountRole = currentAccountResult.recordset[0]?.Quyen;
+
+  // Logic bảo mật:
+  // 1. Không được phép thay đổi quyền của tài khoản ADMIN_TOAN_BO
+  if (currentAccountRole === "ADMIN_TOAN_BO" && payload.Quyen && payload.Quyen !== currentAccountRole) {
+    throw new Error("Không được phép thay đổi quyền của tài khoản ADMIN_TOAN_BO.");
+  }
+  // 2. Không được phép nâng cấp tài khoản lên ADMIN_TOAN_BO qua chức năng này
+  if (payload.Quyen === "ADMIN_TOAN_BO" && currentAccountRole !== "ADMIN_TOAN_BO") {
+    throw new Error("Không được phép nâng cấp tài khoản lên ADMIN_TOAN_BO qua chức năng này.");
+  }
+  // 3. ADMIN_TOAN_BO không thể tự hạ cấp hoặc khóa/mở khóa tài khoản của chính mình
+  if (requestingUserAuth.username === username && (payload.Quyen || payload.TrangThai !== undefined)) {
+    throw new Error("Không được phép thay đổi quyền hoặc trạng thái của tài khoản ADMIN_TOAN_BO đang đăng nhập.");
+  }
 
   await pool
     .request()
@@ -49,6 +83,36 @@ async function updateAccount(username, payload) {
     .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : null)
     .execute("dbo.usp_Central_CapNhatTaiKhoan");
 
+
+    if (accountBranch !== 'CENTRAL') {
+    let linkedServerUpdateSql = '';
+    let linkedServerName = '';
+    let linkedDbName = '';
+
+    if (accountBranch === 'HUE') {
+      linkedServerName = process.env.LINKED_HUE || 'HUE_SERVER';
+      linkedDbName = process.env.HUE_DB_NAME || 'Store_H';
+    } else if (accountBranch === 'SAIGON') {
+      linkedServerName = process.env.LINKED_SAIGON || 'SG_SERVER';
+      linkedDbName = process.env.SAIGON_DB_NAME || 'Store_SG';
+    } else if (accountBranch === 'HANOI') {
+      linkedServerName = process.env.LINKED_HANOI || 'HN_SERVER';
+      linkedDbName = process.env.HANOI_DB_NAME || 'Store_HN';
+    }
+
+    if (linkedServerName) {
+      linkedServerUpdateSql = `
+        UPDATE [${linkedServerName}].[${linkedDbName}].dbo.TaiKhoan
+        SET Quyen = COALESCE(@Quyen, Quyen), TrangThai = COALESCE(@TrangThai, TrangThai)
+        WHERE TenDangNhap = @TenDangNhap;
+      `;
+      await pool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("Quyen", sql.NVarChar(50), payload.Quyen || null)
+        .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : null)
+        .query(linkedServerUpdateSql);
+    }
+  }
   return { TenDangNhap: username };
 }
 

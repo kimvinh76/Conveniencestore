@@ -1,4 +1,5 @@
 const accountService = require("../services/account-service");
+const { requireRole } = require("../middleware/auth");
 
 // ========== CENTRAL APIs (ADMIN_TOAN_BO) ==========
 
@@ -27,17 +28,17 @@ exports.createAccount = async (req, res) => {
   }
 };
 
-exports.updateAccount = async (req, res) => {
+exports.updateAccount = [requireRole("ADMIN_TOAN_BO"), async (req, res) => {
   try {
     const { username } = req.params;
     const { Quyen, TrangThai } = req.body;
 
-    const data = await accountService.updateAccount(username, { Quyen, TrangThai });
+    const data = await accountService.updateAccount(username, { Quyen, TrangThai }, req.auth);
     res.json({ message: "Account updated", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
+}];
 
 exports.lockAccount = async (req, res) => {
   try {

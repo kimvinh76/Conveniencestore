@@ -244,10 +244,29 @@ export default function Page() {
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-semibold text-slate-700">Quyền</span>
-                <select value={form.Quyen} onChange={(e) => setForm({ ...form, Quyen: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="NHAN_VIEN">NHAN_VIEN - Nhân viên</option>
-                  <option value="ADMIN_CHI_NHANH">ADMIN_CHI_NHANH - Admin chi nhánh</option>
-                  <option value="ADMIN_TOAN_BO">ADMIN_TOAN_BO - Admin toàn bộ</option>
+                <select
+                  value={form.Quyen}
+                  onChange={(e) => setForm({ ...form, Quyen: e.target.value })}
+                  required
+                  // Disable the select entirely if editing an ADMIN_TOAN_BO account
+                  disabled={isEditing && form.Quyen === "ADMIN_TOAN_BO"}
+                  className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing && form.Quyen === "ADMIN_TOAN_BO" ? 'bg-slate-100 border-slate-200 text-slate-500 appearance-none' : 'border-slate-300'}`}
+                >
+                  {isEditing && form.Quyen === "ADMIN_TOAN_BO" ? (
+                    // If editing an ADMIN_TOAN_BO account, only show this option (and it's disabled by the select parent)
+                    <option key="ADMIN_TOAN_BO" value="ADMIN_TOAN_BO">ADMIN_TOAN_BO - Admin toàn bộ</option>
+                  ) : (
+                    // Otherwise (creating new or editing non-ADMIN_TOAN_BO), show only NHAN_VIEN and ADMIN_CHI_NHANH
+                    // The ADMIN_TOAN_BO option is completely removed from the list for these cases.
+                    ["NHAN_VIEN", "ADMIN_CHI_NHANH"].map(role => (
+                      <option
+                        key={role}
+                        value={role}
+                      >
+                        {role === "NHAN_VIEN" ? "NHAN_VIEN - Nhân viên" : "ADMIN_CHI_NHANH - Admin chi nhánh"}
+                      </option>
+                    ))
+                  )}
                 </select>
               </label>
               <div className="flex gap-3 mt-2">

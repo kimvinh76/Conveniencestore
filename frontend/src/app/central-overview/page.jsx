@@ -7,7 +7,6 @@ import DynamicChart from "@/components/DynamicChart";
 export default function Page() {
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
-
   const load = async () => {
     setError(null);
     try {

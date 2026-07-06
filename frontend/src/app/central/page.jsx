@@ -174,7 +174,7 @@ export default function Page() {
                   <table className="w-full">
                     <thead className="sticky top-0 bg-white shadow-sm">
                       {rankingModal.type === 'employees' ? 
-                      <tr><th>Chi nhánh</th><th>Nhân viên</th><th className="text-right">Doanh thu</th></tr> :
+                      <tr><th>Chi nhánh</th><th>Nhân viên</th><th className="text-right">Doanh thu</th></tr> : //
                       <tr><th>Chi nhánh</th><th>Sản phẩm</th><th className="text-right">Đã bán</th></tr>
                       }
                     </thead>

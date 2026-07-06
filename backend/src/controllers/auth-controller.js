@@ -6,8 +6,10 @@ const {
   buildAuthUser,
   findAccountForLogin,
   canAccessBranch,
+  hashPassword,
 } = require("../services/auth-service");
 const { requireAuth } = require("../middleware/auth");
+const { getPool, sql } = require("../db/sqlserver");
 
 function toCookieMaxAge(expiresIn) {
   const match = String(expiresIn || "").trim().match(/^(\d+)([smhd])$/i);
@@ -100,6 +102,41 @@ exports.logout = async (_req, res) => {
     ...(String(process.env.COOKIE_DOMAIN || "").trim() ? { domain: String(process.env.COOKIE_DOMAIN).trim() } : {}),
   });
   return res.json({ message: "Logged out" });
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const username = String(req.body.username || req.body.TenDangNhap || "").trim();
+
+    if (!username) {
+      return res.status(400).json({ message: "username is required" });
+    }
+
+    const account = await findAccountForLogin(username);
+    if (!account) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    const { record } = account;
+    const role = String(record.Quyen || "").trim().toUpperCase();
+    if (role === "ADMIN_TOAN_BO") {
+      return res.status(403).json({ message: "Please contact super admin for password reset" });
+    }
+
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashedTempPassword = await hashPassword(tempPassword);
+
+    // Update in CentralDB because findAccountForLogin only queries CentralDB
+    const pool = await getPool("CENTRAL");
+    await pool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .input("MatKhau", sql.VarChar(255), hashedTempPassword)
+      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+    return res.json({ message: "Password reset successfully", tempPassword });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 exports.me = [

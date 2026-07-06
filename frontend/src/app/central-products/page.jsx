@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
 import { apiFetch } from "@/components/api";
 import DataTable from "@/components/DataTable";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function Page() {
   const [rows, setRows] = useState([]);
@@ -10,8 +11,8 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ productCode: "", productName: "", unitPrice: "" });
   const [isEditing, setIsEditing] = useState(false);
-  const [toast, setToast] = useState({ message: "", type: null });
   const [productToDelete, setProductToDelete] = useState(null);
+  const showNotification = useToast();
 
   const formModalRef = useRef(null);
   const deleteModalRef = useRef(null);
@@ -32,11 +33,6 @@ export default function Page() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const showNotification = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast({ message: "", type: null }), 3000);
   };
 
   useEffect(() => {
@@ -179,17 +175,6 @@ export default function Page() {
         </div>
       </dialog>
 
-      {/* Toast Notification */}
-      {toast.message && (
-        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-2xl shadow-2xl transition-all animate-bounce z-[100] flex items-center gap-3 border ${
-          toast.type === "error" ? "bg-white border-red-200 text-red-600" : "bg-white border-emerald-200 text-emerald-600"
-        }`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg ${toast.type === "error" ? "bg-red-100" : "bg-emerald-100"}`}>
-            {toast.type === "error" ? "✕" : "✓"}
-          </div>
-          <span className="font-bold text-sm">{toast.message}</span>
-        </div>
-      )}
     </CentralLayout>
   );
 }

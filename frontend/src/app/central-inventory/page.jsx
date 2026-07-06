@@ -3,31 +3,47 @@ import { useEffect, useState, useRef } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
 import DataTable from "@/components/DataTable";
 import { apiFetch } from "@/components/api";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function Page() {
   const [branch, setBranch] = useState("HUE");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [updateForm, setUpdateForm] = useState({ productCode: "", quantity: "" });
-  const [toast, setToast] = useState({ message: "", type: null });
+  const [updateForm, setUpdateForm] = useState({ productCode: "", quantity: "" }); //
+  const showNotification = useToast();
 
-  const load = async (b = branch) => {
+  const load = async (b = branch) => { //
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch(`/api/inventory?branch=${b}`);
-      setRows(Array.isArray(data) ? data : []);
+      // Gọi song song 2 API để lấy cả Tồn kho và Thông tin sản phẩm gốc
+      const [invData, prodData] = await Promise.all([
+        apiFetch(`/api/inventory?branch=${b}`),
+        apiFetch(`/api/products?branch=CENTRAL`)
+      ]);
+
+      const invList = Array.isArray(invData) ? invData : [];
+      const prodList = Array.isArray(prodData) ? prodData : [];
+
+      // Gộp thông tin: Tên sản phẩm, Giá (từ prodList) + Số lượng (từ invList)
+      const merged = prodList.map(prod => {
+        const pCode = prod.productCode || prod.MaSP;
+        const invItem = invList.find(i => (i.productCode || i.MaSP) === pCode);
+        return { 
+          productCode: pCode, 
+          productName: prod.productName || prod.TenHang, 
+          unitPrice: prod.unitPrice ?? prod.Gia, 
+          quantity: invItem ? (invItem.quantity || invItem.SoLuongTon || 0) : 0 
+        };
+      });
+
+      setRows(merged);
     } catch (err) {
       setError(err.message || String(err));
     } finally {
       setLoading(false);
     }
-  };
-
-  const showNotification = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast({ message: "", type: null }), 3000);
   };
 
   const handleUpdate = async (e) => {
@@ -126,7 +142,7 @@ export default function Page() {
             {loading ? (
               <p className="py-10 text-center text-slate-500">Đang kiểm kho...</p>
             ) : (
-              <DataTable rows={rows} columns={["productCode", "quantity"]} onRowClick={handleRowClick} />
+              <DataTable rows={rows} onRowClick={handleRowClick} />
             )}
           </div>
         </section>
