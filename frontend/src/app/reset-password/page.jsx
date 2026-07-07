@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/components/api";
 import { useToast } from "@/contexts/ToastContext";
-import Link from "next/link";
+import ResetPasswordForm from "./components/ResetPasswordForm";
+import SuccessNotification from "./components/SuccessNotification";
 
-function ResetPasswordForm() {
-  const router = useRouter();
+function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const showNotification = useToast();
 
@@ -56,25 +56,20 @@ function ResetPasswordForm() {
   };
 
   if (success) {
-    return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-emerald-600 mb-4">Thành công!</h2>
-        <p className="text-slate-600 mb-6">Mật khẩu của bạn đã được đặt lại. Bây giờ bạn có thể đăng nhập với mật khẩu mới.</p>
-        <Link href="/" className="btn-primary w-full py-3">
-          Quay về trang đăng nhập
-        </Link>
-      </div>
-    );
+    return <SuccessNotification />;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-      <input type="hidden" value={token} />
-      <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu mới</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
-      <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Xác nhận mật khẩu mới</span><input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
-      <button type="submit" disabled={loading || !token} className="w-full rounded-xl px-4 py-3 font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50">{loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}</button>
-    </form>
+    <ResetPasswordForm
+      password={password}
+      setPassword={setPassword}
+      confirmPassword={confirmPassword}
+      setConfirmPassword={setConfirmPassword}
+      handleSubmit={handleSubmit}
+      loading={loading}
+      error={error}
+      token={token}
+    />
   );
 }
 
@@ -82,9 +77,11 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-6 text-center">Tạo mật khẩu mới</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-6 text-center">
+          Tạo mật khẩu mới
+        </h1>
         <Suspense fallback={<p>Đang tải...</p>}>
-          <ResetPasswordForm />
+          <ResetPasswordPage />
         </Suspense>
       </div>
     </main>

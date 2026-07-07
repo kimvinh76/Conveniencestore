@@ -20,6 +20,7 @@ exports.createEmployee = async (req, res) => {
       MaNV: String(req.body.MaNV || "").trim() || null,
       HoTen: String(req.body.HoTen || "").trim(),
       ChucVu: String(req.body.ChucVu || "").trim(),
+      Email: req.body.Email ? String(req.body.Email).trim() : null,
     };
     const data = await employeeService.createEmployee(branch, payload);
     res.status(201).json({ message: "Employee created", data });
@@ -35,6 +36,7 @@ exports.updateEmployee = async (req, res) => {
     const payload = {
       HoTen: req.body.HoTen ? String(req.body.HoTen).trim() : null,
       ChucVu: req.body.ChucVu ? String(req.body.ChucVu).trim() : null,
+      Email: req.body.Email ? String(req.body.Email).trim() : null,
     };
     const data = await employeeService.updateEmployee(branch, employeeId, payload);
     res.json({ message: "Employee updated", data });

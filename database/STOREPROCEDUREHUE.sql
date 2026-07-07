@@ -199,10 +199,13 @@ GO
  EXEC dbo.usp_Local_DanhSachNhanVien;
 GO
 
+
 CREATE OR ALTER PROCEDURE dbo.usp_Local_ThemNhanVien
     @MaNV VARCHAR(50),
     @HoTen NVARCHAR(120),
-    @ChucVu NVARCHAR(80)
+    @ChucVu NVARCHAR(80),
+    @Email VARCHAR(100) = NULL,
+    @ChiNhanh VARCHAR(10)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -219,19 +222,19 @@ BEGIN
     IF EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNV = @MaNV)
         THROW 50001, N'Mã nhân viên đã tồn tại!', 1;
 
-    INSERT INTO dbo.NhanVien (MaNV, HoTen, ChucVu, ChiNhanh)
-    VALUES (@MaNV, @HoTen, @ChucVu, 'HUE');
+    INSERT INTO dbo.NhanVien (MaNV, HoTen, ChucVu, Email, ChiNhanh)
+    VALUES (@MaNV, @HoTen, @ChucVu, @Email, @ChiNhanh);
 
     SELECT TOP 1 * FROM dbo.NhanVien WHERE MaNV = @MaNV;
 END;
-GO 
- EXEC dbo.usp_Local_ThemNhanVien @MaNV = 'H_TEST_01', @HoTen = N'Nguyễn Văn Test', @ChucVu = N'Thu Ngân';
 GO
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_CapNhatNhanVien
     @MaNV VARCHAR(50),
     @HoTen NVARCHAR(120) = NULL,
-    @ChucVu NVARCHAR(80) = NULL
+    @ChucVu NVARCHAR(80) = NULL,
+    @Email VARCHAR(100) = NULL,
+    @ChiNhanh VARCHAR(10)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -241,8 +244,9 @@ BEGIN
 
     UPDATE dbo.NhanVien
     SET HoTen = COALESCE(NULLIF(LTRIM(RTRIM(@HoTen)), ''), HoTen),
-        ChucVu = COALESCE(NULLIF(LTRIM(RTRIM(@ChucVu)), ''), ChucVu)
-    WHERE MaNV = @MaNV AND ChiNhanh = 'HUE';
+        ChucVu = COALESCE(NULLIF(LTRIM(RTRIM(@ChucVu)), ''), ChucVu),
+        Email = COALESCE(NULLIF(LTRIM(RTRIM(@Email)), ''), Email)
+    WHERE MaNV = @MaNV AND ChiNhanh = @ChiNhanh;
 
     IF @@ROWCOUNT = 0
         THROW 50001, N'Không tìm thấy nhân viên để cập nhật!', 1;
@@ -250,11 +254,10 @@ BEGIN
     SELECT TOP 1 * FROM dbo.NhanVien WHERE MaNV = @MaNV;
 END;
 GO
- EXEC dbo.usp_Local_CapNhatNhanVien @MaNV = 'H_TEST_01', @HoTen = N'Nguyễn Văn Test Đã Sửa', @ChucVu = N'Quản Lý Kho';
- GO
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaNhanVien
-    @MaNV VARCHAR(50)
+    @MaNV VARCHAR(50),
+    @ChiNhanh VARCHAR(10)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -262,17 +265,17 @@ BEGIN
     IF NULLIF(LTRIM(RTRIM(@MaNV)), '') IS NULL
         THROW 50000, N'Mã nhân viên không được để trống!', 1;
 
-    IF NOT EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNV = @MaNV AND ChiNhanh = 'HUE')
+    IF NOT EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNV = @MaNV AND ChiNhanh = @ChiNhanh)
         THROW 50001, N'Không tìm thấy nhân viên để xóa!', 1;
 
     DELETE FROM dbo.NhanVien
-    WHERE MaNV = @MaNV AND ChiNhanh = 'HUE';
+    WHERE MaNV = @MaNV AND ChiNhanh = @ChiNhanh;
 
     SELECT CAST(1 AS BIT) AS deleted, @MaNV AS MaNV;
 END;
-GO 
-EXEC dbo.usp_Local_XoaNhanVien @MaNV = 'H_TEST_01';
 GO
+
+
 
 CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachHoaDon
 AS

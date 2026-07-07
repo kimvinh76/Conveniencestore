@@ -24,6 +24,8 @@ async function createEmployee(branch, payload) {
     .input("MaNV", sql.VarChar(50), maNV)
     .input("HoTen", sql.NVarChar(120), payload.HoTen)
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
+    .input("Email", sql.VarChar(100), payload.Email || null)
+    .input("ChiNhanh", sql.VarChar(10), branch)
     .execute(PROCS.create);
   return rs.recordset[0] || null;
 }
@@ -36,6 +38,8 @@ async function updateEmployee(branch, maNV, payload) {
     .input("MaNV", sql.VarChar(50), maNV)
     .input("HoTen", sql.NVarChar(120), payload.HoTen || null)
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu || null)
+    .input("Email", sql.VarChar(100), payload.Email || null)
+    .input("ChiNhanh", sql.VarChar(10), branch)
     .execute(PROCS.update);
   return rs.recordset[0];
 }
@@ -50,7 +54,10 @@ async function deleteEmployee(branch, maNV) {
   
   if (!beforeDelete.recordset.length) throw new Error("Employee not found");
   
-  await pool.request().input("MaNV", sql.VarChar(50), maNV).execute(PROCS.delete);
+  await pool.request()
+    .input("MaNV", sql.VarChar(50), maNV)
+    .input("ChiNhanh", sql.VarChar(10), branch)
+    .execute(PROCS.delete);
   return beforeDelete.recordset[0];
 }
 
