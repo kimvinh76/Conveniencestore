@@ -1,7 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { sql, isMockMode, getPool } = require("../db/sqlserver");
 const { isCentralBranch } = require("../config/branches");
+const emailService = require("./email-service");
 
 const TOKEN_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "access_token";
 const TOKEN_SECRET = process.env.JWT_SECRET || "dev-only-secret-change-me";
@@ -77,6 +79,7 @@ async function findAccountInCentral(username) {
         tk.TrangThai,
         nv.HoTen,
         nv.ChucVu,
+        nv.Email,
         nv.ChiNhanh
       FROM dbo.TaiKhoan tk
       INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
@@ -91,6 +94,55 @@ async function findAccountForLogin(username) {
   return record ? { branch: record.ChiNhanh, record } : null;
 }
 
+async function findAccountByEmail(email) {
+  if (isMockMode()) return null;
+
+  const pool = await getPool("CENTRAL");
+  const result = await pool
+    .request()
+    .input("Email", sql.VarChar(100), email)
+    .query(`
+      SELECT TOP 1
+        tk.TenDangNhap, tk.MatKhau, tk.MaNV, tk.Quyen, tk.TrangThai,
+        nv.HoTen, nv.ChucVu, nv.Email, nv.ChiNhanh
+      FROM dbo.TaiKhoan tk
+      INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
+      WHERE nv.Email = @Email;
+    `);
+
+  const record = result.recordset[0] || null;
+  return record ? { branch: record.ChiNhanh, record } : null;
+}
+
+async function createPasswordResetToken(email) {
+  const pool = await getPool("CENTRAL");
+  const account = await findAccountByEmail(email);
+  if (!account || !account.record.Email) {
+    // Không throw lỗi để tránh user enumeration, chỉ trả về null
+    return null;
+  }
+
+  const username = account.record.TenDangNhap;
+
+  // Xóa token cũ nếu có
+  await pool.request().input("TenDangNhap", sql.VarChar(50), username).query("DELETE FROM dbo.PasswordResetToken WHERE TenDangNhap = @TenDangNhap");
+
+  // Tạo token mới
+  const token = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  // Lưu token vào DB với thời gian hết hạn (ví dụ: 15 phút)
+  const expires = new Date(Date.now() + 15 * 60 * 1000);
+  await pool.request()
+    .input("Token", sql.VarChar(255), hashedToken)
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .input("NgayHetHan", sql.DateTime2, expires)
+    .query("INSERT INTO dbo.PasswordResetToken (Token, TenDangNhap, NgayHetHan) VALUES (@Token, @TenDangNhap, @NgayHetHan)");
+
+  // Trả về token chưa hash để gửi email
+  return { email: account.record.Email, token };
+}
+
 module.exports = {
   TOKEN_COOKIE_NAME,
   TOKEN_SECRET,
@@ -101,4 +153,7 @@ module.exports = {
   buildAuthUser,
   findAccountForLogin,
   canAccessBranch,
+  findAccountByEmail,
+  createPasswordResetToken,
+  sendPasswordResetEmail: emailService.sendPasswordResetEmail,
 };

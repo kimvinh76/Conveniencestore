@@ -6,6 +6,8 @@ const {
   buildAuthUser,
   findAccountForLogin,
   canAccessBranch,
+  createPasswordResetToken,
+  sendPasswordResetEmail,
   hashPassword,
 } = require("../services/auth-service");
 const { requireAuth } = require("../middleware/auth");
@@ -106,36 +108,58 @@ exports.logout = async (_req, res) => {
 
 exports.forgotPassword = async (req, res) => {
   try {
-    const username = String(req.body.username || req.body.TenDangNhap || "").trim();
+    const email = String(req.body.email || "").trim();
 
-    if (!username) {
-      return res.status(400).json({ message: "username is required" });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
     }
 
-    const account = await findAccountForLogin(username);
-    if (!account) {
-      return res.status(404).json({ message: "Account not found" });
+    const tokenData = await createPasswordResetToken(email);
+
+    if (tokenData) {
+      await sendPasswordResetEmail(tokenData.email, tokenData.token);
     }
 
-    const { record } = account;
-    const role = String(record.Quyen || "").trim().toUpperCase();
-    if (role === "ADMIN_TOAN_BO") {
-      return res.status(403).json({ message: "Please contact super admin for password reset" });
-    }
+    // Luôn trả về thông báo thành công chung chung để tránh user enumeration
+    return res.json({ message: "If your account exists, a password reset link has been sent to your email." });
 
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const hashedTempPassword = await hashPassword(tempPassword);
-
-    // Update in CentralDB because findAccountForLogin only queries CentralDB
-    const pool = await getPool("CENTRAL");
-    await pool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .input("MatKhau", sql.VarChar(255), hashedTempPassword)
-      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-
-    return res.json({ message: "Password reset successfully", tempPassword });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required." });
+    }
+
+    const hashedToken = require("crypto").createHash("sha256").update(token).digest("hex");
+
+    const pool = await getPool("CENTRAL");
+    const tokenRecord = await pool.request()
+      .input("Token", sql.VarChar(255), hashedToken)
+      .query("SELECT * FROM dbo.PasswordResetToken WHERE Token = @Token AND NgayHetHan > GETDATE()");
+
+    if (!tokenRecord.recordset.length) {
+      return res.status(400).json({ message: "Invalid or expired password reset token." });
+    }
+
+    const { TenDangNhap } = tokenRecord.recordset[0];
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // Cập nhật mật khẩu và xóa token
+    await pool.request()
+      .input("TenDangNhap", sql.VarChar(50), TenDangNhap)
+      .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+    await pool.request().input("Token", sql.VarChar(255), hashedToken).query("DELETE FROM dbo.PasswordResetToken WHERE Token = @Token");
+
+    res.json({ message: "Password has been reset successfully." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

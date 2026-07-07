@@ -27,6 +27,7 @@ CREATE TABLE dbo.NhanVien (
     MaNV VARCHAR(50) NOT NULL PRIMARY KEY,
     HoTen NVARCHAR(120) NOT NULL,
     ChucVu NVARCHAR(80) NOT NULL,
+    Email VARCHAR(100) NULL,
     ChiNhanh VARCHAR(10) NOT NULL,
     TrangThai BIT NOT NULL CONSTRAINT DF_NhanVien_TrangThai DEFAULT 1,
     CONSTRAINT FK_NhanVien_C_ChiNhanh FOREIGN KEY (ChiNhanh) REFERENCES dbo.ChiNhanh(MaChiNhanh)
@@ -264,6 +265,15 @@ CREATE TABLE dbo.TaiKhoan (
     CONSTRAINT UQ_TaiKhoan_MaNV UNIQUE (MaNV),
     CONSTRAINT CK_TaiKhoan_Quyen CHECK (Quyen IN (N'NHAN_VIEN', N'ADMIN_CHI_NHANH', N'ADMIN_TOAN_BO')),
     CONSTRAINT FK_TaiKhoan_C_NhanVien FOREIGN KEY (MaNV) REFERENCES dbo.NhanVien(MaNV)
+);
+GO
+
+-- Bảng lưu token reset mật khẩu
+CREATE TABLE dbo.PasswordResetToken (
+    Token VARCHAR(255) NOT NULL PRIMARY KEY,
+    TenDangNhap VARCHAR(50) NOT NULL,
+    NgayHetHan DATETIME2 NOT NULL,
+    CONSTRAINT FK_PasswordResetToken_TaiKhoan FOREIGN KEY (TenDangNhap) REFERENCES dbo.TaiKhoan(TenDangNhap) ON DELETE CASCADE
 );
 GO
 
