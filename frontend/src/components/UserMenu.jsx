@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { useBranch } from "@/components/useBranch";
+import { useBranch } from "@/hooks/useBranch";
 import { useToast } from "@/contexts/ToastContext";
-import { apiFetch } from "@/components/api";
+import { apiFetch } from "@/services/api";
 
 export default function UserMenu() {
   const { auth, logout } = useBranch();
@@ -37,14 +37,14 @@ export default function UserMenu() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors shadow-sm"
       >
-        <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-white font-bold text-sm">
+        <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-sm shadow-inner">
           {(auth?.fullName || auth?.username || "?").charAt(0).toUpperCase()}
         </div>
         <div className="hidden md:block text-left">
-          <div className="text-sm font-semibold text-white">{auth?.fullName || auth?.username || "User"}</div>
-          <div className="text-xs text-cyan-200">{auth?.role || ""}</div>
+          <div className="text-sm font-semibold text-slate-800">{auth?.fullName || auth?.username || "User"}</div>
+          <div className="text-xs text-slate-500">{auth?.role || ""}</div>
         </div>
       </button>
 

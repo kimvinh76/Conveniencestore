@@ -1,12 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch } from "@/components/api";
+import { apiFetch } from "@/services/api";
 import { useToast } from "@/contexts/ToastContext";
+import { useBranch } from "@/hooks/useBranch";
 
 export default function LoginPage() {
   const router = useRouter();
   const showNotification = useToast();
+  const { auth, ready } = useBranch();
+
+  useEffect(() => {
+
+    if (ready && auth) {
+      if (auth.branch === "CENTRAL") {
+        router.replace("/central");
+      } else {
+        router.replace("/branch/dashboard");
+      }
+    }
+  }, [ready, auth, router]);
 
   // Login state
   const [username, setUsername] = useState("");
@@ -36,7 +49,7 @@ export default function LoginPage() {
       if (res.branch === "CENTRAL") {
         router.push("/central");
       } else {
-        router.push("/branch-dashboard");
+        router.push("/branch/dashboard");
       }
     } catch (err) {
       setError(err.message || "Đăng nhập thất bại. Vui lòng thử lại.");
@@ -63,6 +76,17 @@ export default function LoginPage() {
       setForgotLoading(false);
     }
   };
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-900 mx-auto"></div>
+          <p className="mt-4 text-slate-500 font-medium font-sans">Đang tải.....</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 flex items-center justify-center p-6">

@@ -1,20 +1,41 @@
 "use client";
 import Link from "next/link";
-import { useBranch } from "@/components/useBranch";
+import { usePathname } from "next/navigation";
+import { useBranch } from "@/hooks/useBranch";
 import UserMenu from "@/components/UserMenu";
 
-export default function CentralLayout({ active = "dashboard", children }) {
-  const { logout, auth } = useBranch({ requireCentral: true });
+export default function CentralLayout({ children }) {
+  const { logout, auth, ready } = useBranch({ requireCentral: true });
+  const pathname = usePathname();
+
+  if (!ready || !auth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-500 font-medium font-sans">Đang kiểm tra quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
     { id: "dashboard", href: "/central", label: "Thống kê toàn cục" },
-    { id: "products", href: "/central-products", label: "Sản phẩm" },
-    { id: "invoices", href: "/central-invoices", label: "Hóa đơn" },
-    { id: "employees", href: "/central-employees", label: "Nhân viên" },
-    { id: "inventory", href: "/central-inventory", label: "Tồn kho" },
-    { id: "transfer", href: "/central-transfer", label: "Chuyển kho" },
-    { id: "accounts", href: "/central-accounts", label: "Tài khoản" },
+    { id: "products", href: "/central/products", label: "Sản phẩm" },
+    { id: "invoices", href: "/central/invoices", label: "Hóa đơn" },
+    { id: "employees", href: "/central/employees", label: "Nhân viên" },
+    { id: "inventory", href: "/central/inventory", label: "Tồn kho" },
+    { id: "transfer", href: "/central/transfer", label: "Chuyển kho" },
+    { id: "accounts", href: "/central/accounts", label: "Tài khoản" },
   ];
+
+  const activeItem = navItems.find((item) => {
+    if (item.href === "/central") {
+      return pathname === "/central";
+    }
+    return pathname === item.href || pathname.startsWith(item.href + "/");
+  });
+  const active = activeItem ? activeItem.id : "";
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -59,7 +80,7 @@ export default function CentralLayout({ active = "dashboard", children }) {
 
       {/* Main Content - Nằm bên phải */}
       <main className="flex-1 ml-64 p-8 min-h-screen">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="flex justify-end mb-4">
             <UserMenu />
           </div>

@@ -1,0 +1,201 @@
+"use client";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/services/api";
+import { useToast } from "@/contexts/ToastContext";
+import { useModal } from "@/hooks/useModal";
+import ProductList from "./components/ProductList";
+
+const PRODUCT_IMAGES = {
+  MI_GOI: "/images/migoi.png",
+  SUA_HOP: "/images/suahop.png",
+  NUOC_SUOI: "/images/nuoc_suoi.png",
+  BANH_SNACK: "/images/banhsnack.png",
+  CA_PHE_LON: "/images/caphe.png",
+  TRA_XANH: "/images/traxanh.png",
+  KEO_CAOSUG: "/images/keocaosu.png",
+  NUOC_NGOT: "/images/nuocngot.png",
+  MUT_KHO: "/images/mutkho.png",
+};
+
+const PRODUCT_DESCRIPTIONS = {
+  MI_GOI: "Mì ăn liền thơm ngon, tiện lợi cho bữa ăn nhanh.",
+  SUA_HOP: "Sữa tươi tiệt trùng bổ sung dưỡng chất và năng lượng.",
+  NUOC_SUOI: "Nước khoáng tinh khiết, mát lạnh sảng khoái.",
+  BANH_SNACK: "Snack giòn rụm, hương vị đậm đà, ăn vặt cực đã.",
+  CA_PHE_LON: "Cà phê lon đậm vị cà phê sữa đá Việt Nam truyền thống.",
+  TRA_XANH: "Trà xanh tự nhiên thanh mát, ít ngọt, tốt cho sức khỏe.",
+  KEO_CAOSUG: "Kẹo cao su hương bạc hà thơm mát, sảng khoái tinh thần.",
+  NUOC_NGOT: "Nước ngọt có ga sảng khoái, đập tan cơn khát.",
+  MUT_KHO: "Mứt hoa quả sấy khô dẻo ngọt, thơm ngon tự nhiên.",
+};
+
+export default function Page() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ productCode: "", productName: "", unitPrice: "" });
+  const [isEditing, setIsEditing] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const showNotification = useToast();
+
+  const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
+  const { isOpen: isDeleteOpen, open: openDeleteModal, close: closeDeleteModal } = useModal();
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch("/api/products?branch=CENTRAL");
+      const normalized = (Array.isArray(data) ? data : []).map((row) => ({
+        productCode: row.productCode || row.MaSP,
+        productName: row.productName || row.TenHang,
+        unitPrice: row.unitPrice ?? row.Gia,
+      }));
+      setRows(normalized);
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load().catch(() => {});
+  }, []);
+
+  const handleAdd = () => {
+    setForm({ productCode: "", productName: "", unitPrice: "" });
+    setIsEditing(false);
+    openFormModal();
+  };
+
+  const handleEdit = (row) => {
+    setForm({ productCode: row.productCode, productName: row.productName, unitPrice: row.unitPrice });
+    setIsEditing(true);
+    openFormModal();
+  };
+
+  const handleDelete = async (code) => {
+    setProductToDelete(code);
+    openDeleteModal();
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    try {
+      await apiFetch(`/api/products/${productToDelete}?branch=CENTRAL`, { method: "DELETE" });
+      closeDeleteModal();
+      showNotification(`Đã xóa sản phẩm ${productToDelete} thành công`);
+      load();
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `/api/products/${form.productCode}?branch=CENTRAL` : "/api/products?branch=CENTRAL";
+      await apiFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      closeFormModal();
+      showNotification(isEditing ? "Cập nhật sản phẩm thành công" : "Thêm sản phẩm mới thành công");
+      load();
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-col gap-6 w-full">
+        <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div>
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Danh mục gốc</p>
+            <h1 className="text-3xl font-bold text-slate-900">Quản lý sản phẩm toàn hệ thống</h1>
+          </div>
+          <div className="flex gap-3">
+            <button className="btn-primary" onClick={handleAdd}>+ Thêm sản phẩm</button>
+          </div>
+        </header>
+
+        {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200">Lỗi: {error}</div>}
+
+        {loading ? (
+          <div className="bg-white py-20 text-center text-slate-500 border border-slate-200 rounded-2xl">
+            Đang tải dữ liệu sản phẩm...
+          </div>
+        ) : (
+          <ProductList 
+            products={rows}
+            productImages={PRODUCT_IMAGES}
+            productDescriptions={PRODUCT_DESCRIPTIONS}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+      </div>
+
+      {/* Modal Thêm/Sửa */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={closeFormModal} />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md z-10">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-800">{isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h3>
+              <button onClick={closeFormModal} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Mã sản phẩm</span>
+                <input 
+                  value={form.productCode} 
+                  onChange={e => setForm({...form, productCode: e.target.value})} 
+                  readOnly={isEditing} 
+                  className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${isEditing ? "bg-slate-100 text-slate-500" : "bg-white"}`}
+                  required 
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Tên sản phẩm</span>
+                <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Giá bán gốc (VND)</span>
+                <input type="number" value={form.unitPrice} onChange={e => setForm({...form, unitPrice: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+              </label>
+              <div className="flex gap-3 mt-4">
+                <button type="submit" className="btn-primary flex-1 font-bold">Lưu thông tin</button>
+                <button type="button" className="btn-ghost border flex-1 font-bold" onClick={closeFormModal}>Hủy bỏ</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác nhận xóa */}
+      {isDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={closeDeleteModal} />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm z-10">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-red-50 text-red-600">
+              <h3 className="text-xl font-bold">Xác nhận xóa sản phẩm</h3>
+              <button onClick={closeDeleteModal} className="text-red-400 hover:text-red-600 font-bold">✕</button>
+            </div>
+            <div className="p-6">
+              <p className="text-slate-700 mb-6 text-center">Bạn có chắc chắn muốn xóa sản phẩm <strong className="text-slate-900">{productToDelete}</strong>? Thao tác này sẽ xóa dữ liệu liên quan tại tất cả chi nhánh.</p>
+              <div className="flex gap-3">
+                <button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl flex-1 transition-all">Xóa ngay</button>
+                <button onClick={closeDeleteModal} className="btn-ghost border flex-1 font-bold">Hủy bỏ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

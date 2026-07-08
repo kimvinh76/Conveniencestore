@@ -10,8 +10,32 @@ const PROCS = {
 };
 
 async function listProducts(branch) {
-  if (isMockMode()) return mock.listProducts();
+  if (isMockMode()) {
+    const list = mock.listProducts();
+    if (branch === "CENTRAL") return list;
+    const inv = mock.listInventory(branch);
+    return list.map(p => {
+      const stockItem = inv.find(i => i.productCode === p.productCode);
+      return { ...p, stock: stockItem ? stockItem.quantity : 0 };
+    });
+  }
   const pool = await getPool(branch);
+  if (branch !== "CENTRAL") {
+    const query = `
+      SELECT 
+        hh.MaSP AS productCode,
+        hh.TenHang AS productName,
+        CAST(hh.Gia AS DECIMAL(10,2)) AS unitPrice,
+        ISNULL(tk.SoLuongTon, 0) AS stock
+      FROM dbo.HangHoa hh
+      LEFT JOIN dbo.TonKho tk ON tk.MaSP = hh.MaSP AND tk.ChiNhanh = @Branch
+      ORDER BY hh.MaSP;
+    `;
+    const result = await pool.request()
+      .input("Branch", sql.VarChar(10), branch)
+      .query(query);
+    return result.recordset;
+  }
   const result = await pool.request().execute(PROCS.list);
   return result.recordset;
 }

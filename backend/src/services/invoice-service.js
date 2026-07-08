@@ -7,11 +7,25 @@ const PROCS = {
   create: "dbo.usp_Local_TaoHoaDonNhieuDong"
 };
 
+const formatDate = (dateVal) => {
+  if (!dateVal) return "";
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return dateVal;
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${dateStr} ${timeStr}`;
+};
+
 async function listInvoicesByBranch(branch) {
-  if (isMockMode()) return mock.listInvoicesByBranch(branch);
+  if (isMockMode()) {
+    const rows = mock.listInvoicesByBranch(branch);
+    return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
+  }
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
-  return result.recordset;
+  const rows = result.recordset || [];
+  return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
 }
 
 async function getInvoiceDetails(branch, invoiceId) {

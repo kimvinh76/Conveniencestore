@@ -1,19 +1,35 @@
 "use client";
 import Link from "next/link";
-import { useBranch } from "@/components/useBranch";
+import { usePathname } from "next/navigation";
+import { useBranch } from "@/hooks/useBranch";
 import UserMenu from "@/components/UserMenu";
 
-export default function BranchLayout({ active = "dashboard", children }) {
-  const { branchLabel, logout, auth } = useBranch({ requireLocal: true });
+export default function BranchLayout({ children }) {
+  const { branchLabel, logout, auth, ready } = useBranch({ requireLocal: true });
+  const pathname = usePathname();
+
+  if (!ready || !auth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
+          <p className="mt-4 text-slate-500 font-medium font-sans">Đang kiểm tra quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
-    { id: "dashboard", href: "/branch-dashboard", label: "Dashboard" },
-    { id: "employees", href: "/branch-employees", label: "Nhân viên" },
-    { id: "invoices", href: "/branch-invoices", label: "Hóa đơn" },
-    { id: "products", href: "/branch-products", label: "Sản phẩm" },
-    { id: "inventory", href: "/branch-inventory", label: "Tồn kho" },
-    { id: "accounts", href: "/branch-accounts", label: "Tài khoản" },
+    { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
+    { id: "employees", href: "/branch/employees", label: "Nhân viên" },
+    { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
+    { id: "products", href: "/branch/products", label: "Sản phẩm" },
+    { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+    { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
   ];
+
+  const activeItem = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+  const active = activeItem ? activeItem.id : "dashboard";
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -58,7 +74,7 @@ export default function BranchLayout({ active = "dashboard", children }) {
 
       {/* Main Content - Nằm bên phải */}
       <main className="flex-1 ml-64 p-8 min-h-screen">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="flex justify-end mb-4">
             <UserMenu />
           </div>

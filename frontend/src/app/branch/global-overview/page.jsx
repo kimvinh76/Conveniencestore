@@ -1,24 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/services/api";
-import DataTable from "@/components/DataTable";
 import DynamicChart from "@/components/DynamicChart";
+import { useBranch } from "@/hooks/useBranch";
+import Link from "next/link";
 
 export default function Page() {
+  const { branch } = useBranch({ requireLocal: true });
   const [report, setReport] = useState(null);
   const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState({ open: false, type: null });
   const [rankingModal, setRankingModal] = useState({ open: false, type: null });
 
-  const loadData = async () => {
-    setLoading(true);
+  const load = async () => {
+    if (!branch) return;
     setError(null);
+    setLoading(true);
     try {
       const [nationalData, overviewData] = await Promise.all([
-        apiFetch("/api/revenue/national?branch=CENTRAL"),
-        apiFetch("/api/analytics/overview?branch=CENTRAL")
+        apiFetch(`/api/revenue/national?branch=${branch}`),
+        apiFetch(`/api/analytics/overview?branch=${branch}`)
       ]);
       setReport(nationalData);
       setOverview(overviewData);
@@ -30,8 +33,8 @@ export default function Page() {
   };
 
   useEffect(() => {
-    loadData().catch(() => {});
-  }, []);
+    load().catch(() => {});
+  }, [branch]);
 
   const byBranch = Array.isArray(report?.byBranch) ? report.byBranch : [];
   const daily = Array.isArray(overview?.daily) ? overview.daily : [];
@@ -59,8 +62,8 @@ export default function Page() {
     <div className="flex flex-col gap-6 w-full">
         <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div>
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Tác vụ Toàn cục</p>
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard Tổng công ty (HQ)</h1>
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Toàn cục</p>
+            <h1 className="text-3xl font-bold text-slate-900">Phân tích chuyên sâu toàn hệ thống</h1>
           </div>
         </header>
 
@@ -88,20 +91,20 @@ export default function Page() {
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-slate-800">Doanh thu toàn công ty (Theo Ngày)</h3>
-                  <button className="text-blue-600 font-semibold text-sm hover:underline" onClick={() => setDetailModal({ open: true, type: 'daily' })}>Xem chi tiết chi nhánh</button>
+                  <h3 className="text-lg font-bold text-slate-800">Xu hướng Ngày (Toàn quốc)</h3>
+                  <button className="text-blue-600 font-semibold text-sm hover:underline" onClick={() => setDetailModal({ open: true, type: 'daily' })}>Xem chi tiết</button>
                 </div>
                 <div className="h-72">
-                  <DynamicChart type="line" labels={Object.keys(globalDaily)} datasets={[{ label: "Doanh thu Global", data: Object.values(globalDaily), borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.1)", tension: 0.4, fill: true }]} options={{ responsive: true, maintainAspectRatio: false }} />
+                  <DynamicChart type="line" labels={Object.keys(globalDaily)} datasets={[{ label: "Doanh thu", data: Object.values(globalDaily), borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.1)", tension: 0.4, fill: true }]} options={{ responsive: true, maintainAspectRatio: false }} />
                 </div>
               </div>
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-slate-800">Doanh thu toàn công ty (Theo Tuần)</h3>
-                  <button className="text-blue-600 font-semibold text-sm hover:underline" onClick={() => setDetailModal({ open: true, type: 'weekly' })}>Xem chi tiết chi nhánh</button>
+                  <h3 className="text-lg font-bold text-slate-800">Xu hướng Tuần (Toàn quốc)</h3>
+                  <button className="text-blue-600 font-semibold text-sm hover:underline" onClick={() => setDetailModal({ open: true, type: 'weekly' })}>Xem chi tiết</button>
                 </div>
                 <div className="h-72">
-                  <DynamicChart type="line" labels={Object.keys(globalWeekly)} datasets={[{ label: "Doanh thu Global", data: Object.values(globalWeekly), borderColor: "#8b5cf6", backgroundColor: "rgba(139,92,246,0.1)", tension: 0.4, fill: true }]} options={{ responsive: true, maintainAspectRatio: false }} />
+                  <DynamicChart type="line" labels={Object.keys(globalWeekly)} datasets={[{ label: "Doanh thu", data: Object.values(globalWeekly), borderColor: "#8b5cf6", backgroundColor: "rgba(139,92,246,0.1)", tension: 0.4, fill: true }]} options={{ responsive: true, maintainAspectRatio: false }} />
                 </div>
               </div>
             </section>
@@ -119,14 +122,14 @@ export default function Page() {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="bg-slate-800 p-8 rounded-2xl shadow-lg text-white flex flex-col justify-center items-center flex-1 cursor-pointer hover:bg-slate-700 transition-colors" onClick={() => setRankingModal({ open: true, type: 'employees' })}>
-                  <h4 className="text-xl font-bold mb-2">Nhân viên bán nhiều tiền nhất</h4>
+                  <h4 className="text-xl font-bold mb-2">Bảng vàng Nhân viên</h4>
                   <p className="text-slate-300 text-center text-sm">Xem top nhân viên bán tốt nhất tại mỗi chi nhánh tuần này</p>
-                  <button className="mt-4 bg-white text-indigo-900 px-6 py-2 rounded-full font-bold text-sm">Xem ngay</button>
+                  <button className="mt-4 bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-sm">Xem ngay</button>
                 </div>
                 <div className="bg-teal-800 p-8 rounded-2xl shadow-lg text-white flex flex-col justify-center items-center flex-1 cursor-pointer hover:bg-teal-700 transition-colors" onClick={() => setRankingModal({ open: true, type: 'products' })}>
                   <h4 className="text-xl font-bold mb-2">Sản phẩm Hot nhất</h4>
                   <p className="text-teal-100 text-center text-sm">Khám phá các sản phẩm dẫn đầu doanh số tại các khu vực</p>
-                  <button className="mt-4 bg-white text-emerald-800 px-6 py-2 rounded-full font-bold text-sm">Xem ngay</button>
+                  <button className="mt-4 bg-white text-teal-800 px-6 py-2 rounded-full font-bold text-sm">Xem ngay</button>
                 </div>
               </div>
             </section>
@@ -138,7 +141,7 @@ export default function Page() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 className="text-2xl font-bold text-slate-800">Chi tiết doanh thu - {detailModal.type === 'daily' ? 'Theo Ngày' : 'Theo Tuần'}</h3>
+                <h3 className="text-2xl font-bold text-slate-800">Chi tiết chi nhánh - {detailModal.type === 'daily' ? 'Theo Ngày' : 'Theo Tuần'}</h3>
                 <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setDetailModal({ open: false, type: null })}>✕</button>
               </div>
               <div className="p-8 overflow-y-auto h-[600px]">
@@ -161,7 +164,7 @@ export default function Page() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 className="text-xl font-bold text-slate-800">{rankingModal.type === 'employees' ? 'Top Nhân viên xuất sắc' : 'Top Sản phẩm bán chạy'}</h3>
+                <h3 className="text-xl font-bold text-slate-800">{rankingModal.type === 'employees' ? 'Bảng vàng Nhân viên' : 'Sản phẩm Hot nhất'}</h3>
                 <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setRankingModal({ open: false, type: null })}>✕</button>
               </div>
               <div className="p-6">
@@ -175,14 +178,14 @@ export default function Page() {
                     </thead>
                     <tbody>
                       {rankingModal.type === 'employees' ? 
-                      (topEmployees.length > 0 ? 
+                      (topEmployees.length > 0 ?
                       topEmployees.map((e, idx) => (
                         <tr key={idx}>
                           <td><span className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">{e.branch}</span></td>
                           <td>{e.employeeName}</td>
                           <td className="text-right font-bold text-teal-600">{Number(e.totalRevenue).toLocaleString("vi-VN")} đ</td>
                         </tr>
-                      )) : <tr><td colSpan="3" className="text-center py-10 text-slate-400">Không có dữ liệu tuần này</td></tr>) 
+                      )) : <tr><td colSpan="3" className="text-center py-10 text-slate-400">Không có dữ liệu tuần này</td></tr>)
                       :
                       (topProducts.length > 0 ?
                       topProducts.map((p, idx) => (
