@@ -83,7 +83,7 @@ export default function LoginPage() {
 
       {/* Forgot Password Modal */}
       {forgotOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
             <h3 className="text-xl font-bold text-slate-800 mb-2">Quên mật khẩu</h3>
             <p className="text-sm text-slate-500 mb-6">Nhập địa chỉ email của bạn. Một liên kết để đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.</p>

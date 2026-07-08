@@ -1,14 +1,15 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BranchLayout from "@/components/layouts/BranchLayout";
 import { apiFetch } from "@/components/api";
 import DataTable from "@/components/DataTable";
-import { useBranch } from "@/components/useBranch"; //
+import { useBranch } from "@/components/useBranch";
 import { useToast } from "@/contexts/ToastContext";
+import { useModal } from "@/hooks/useModal";
 
 export default function Page() {
   const { branch, auth } = useBranch({ requireLocal: true });
-  const [activeTab, setActiveTab] = useState("pos"); // "pos" hoặc "history"
+  const [activeTab, setActiveTab] = useState("pos");
   const [products, setProducts] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -19,11 +20,12 @@ export default function Page() {
   const [detailsTitle, setDetailsTitle] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const modalRef = useRef(null);
+  const showNotification = useToast();
+  const { isOpen: isDetailsOpen, open: openDetailsModal, close: closeDetailsModal } = useModal();
   // Trạng thái tìm kiếm hóa đơn trong tab lịch sử
   const [searchInvoice, setSearchInvoice] = useState("");
   const [note, setNote] = useState("");
-  const showNotification = useToast();
+
 
   const totalAmount = useMemo(() => cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0), [cartItems]);
 
@@ -128,7 +130,7 @@ export default function Page() {
       const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=${branch}`);
       setDetails(Array.isArray(data.data) ? data.data : data);
       setDetailsTitle(row.MaHD);
-      modalRef.current?.showModal();
+      openDetailsModal();
     } catch (err) {
       setResult(`Lỗi: ${err.message || String(err)}`);
     }
@@ -243,15 +245,19 @@ export default function Page() {
       </div>
 
       {/* Modal Chi tiết */}
-      <dialog ref={modalRef} className="modal">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-xl font-bold text-slate-800">Chi tiết hóa đơn: <span className="text-teal-600">{detailsTitle}</span></h3>
-          <button className="btn-ghost !py-1.5 !px-3" onClick={() => modalRef.current?.close()}>Đóng</button> //
+      {isDetailsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-slate-800">Chi tiết hóa đơn: <span className="text-teal-600">{detailsTitle}</span></h3>
+              <button className="btn-ghost !py-1.5 !px-3" onClick={closeDetailsModal}>Đóng</button>
+            </div>
+            <div className="table-wrap">
+              <DataTable rows={details} />
+            </div>
+          </div>
         </div>
-        <div className="table-wrap">
-          <DataTable rows={details} /> //
-        </div>
-      </dialog>
+      )}
     </BranchLayout>
   );
 }

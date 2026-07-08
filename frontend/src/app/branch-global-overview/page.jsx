@@ -143,7 +143,7 @@ export default function Page() {
 
         {/* MODAL CHI TIẾT DOANH THU 3 CHI NHÁNH */}
         {detailModal.open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                 <h3 className="text-2xl font-bold text-slate-800">Chi tiết chi nhánh - {detailModal.type === 'daily' ? 'Theo Ngày' : 'Theo Tuần'}</h3>
@@ -166,7 +166,7 @@ export default function Page() {
 
         {/* MODAL RANKING NHÂN VIÊN/SẢN PHẨM */}
         {rankingModal.open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                 <h3 className="text-xl font-bold text-slate-800">{rankingModal.type === 'employees' ? 'Bảng vàng Nhân viên' : 'Sản phẩm Hot nhất'}</h3>

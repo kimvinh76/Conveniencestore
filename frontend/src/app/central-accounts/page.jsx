@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
 import { apiFetch } from "@/components/api";
 import { useBranch } from "@/components/useBranch";
+import { useModal } from "@/hooks/useModal";
 
 export default function Page() {
   const { auth } = useBranch({ requireCentral: true });
@@ -16,7 +17,7 @@ export default function Page() {
 
   const isAdmin = auth?.role === "ADMIN_TOAN_BO";
 
-  const formModalRef = useRef(null);
+  const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -49,15 +50,13 @@ export default function Page() {
   const openAddModal = () => {
     setIsEditing(false);
     setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", Quyen: "NHAN_VIEN", TrangThai: 1 });
-    formModalRef.current?.showModal();
+    openFormModal();
   };
-
-  const closeFormModal = () => formModalRef.current?.close();
 
   const handleEdit = (acc) => {
     setIsEditing(true);
     setForm({ TenDangNhap: acc.TenDangNhap, MatKhau: "", MaNV: acc.MaNV, Quyen: acc.Quyen, TrangThai: acc.TrangThai });
-    formModalRef.current?.showModal();
+    openFormModal();
   };
 
   const handleSubmit = async (e) => {
@@ -208,73 +207,68 @@ export default function Page() {
       </div>
 
       {/* Lọc danh sách nhân viên chưa có tài khoản */}
-      {(() => {
+      {isFormOpen && (() => {
         const availableEmployees = isEditing 
           ? employees.filter(emp => emp.MaNV === form.MaNV) 
           : employees.filter(emp => !accounts.some(acc => acc.MaNV === emp.MaNV));
         
         return (
-          <dialog ref={formModalRef} className="modal w-full max-w-md bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
-            <div className="p-6 border-b border-indigo-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">{isEditing ? "Cập nhật tài khoản" : "Tạo tài khoản mới"}</h3>
-              <button onClick={closeFormModal} className="text-slate-400 hover:text-slate-600">✕</button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Tên đăng nhập</span>
-                <input value={form.TenDangNhap} onChange={(e) => setForm({ ...form, TenDangNhap: e.target.value })} required readOnly={isEditing} className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing ? 'bg-slate-100 border-slate-200 text-slate-500' : 'border-slate-300'}`} />
-              </label>
-              {!isEditing && (
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold text-slate-700">Mật khẩu</span>
-                  <input type="password" value={form.MatKhau} onChange={(e) => setForm({ ...form, MatKhau: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </label>
-              )}
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Mã nhân viên</span>
-                <select value={form.MaNV} onChange={(e) => setForm({ ...form, MaNV: e.target.value })} required disabled={isEditing} className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing ? 'bg-slate-100 border-slate-200 text-slate-500 appearance-none' : 'border-slate-300'}`}>
-                  <option value="">-- Chọn nhân viên --</option>
-                  {availableEmployees.map(emp => (
-                    <option key={emp.MaNV} value={emp.MaNV}>{emp.HoTen} ({emp.MaNV}) - {emp.ChiNhanh}</option>
-                  ))}
-                </select>
-                {availableEmployees.length === 0 && !isEditing && (
-                  <span className="text-xs text-red-500 mt-1">Tất cả nhân viên đều đã có tài khoản.</span>
-                )}
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Quyền</span>
-                <select
-                  value={form.Quyen}
-                  onChange={(e) => setForm({ ...form, Quyen: e.target.value })}
-                  required
-                  // Disable the select entirely if editing an ADMIN_TOAN_BO account
-                  disabled={isEditing && form.Quyen === "ADMIN_TOAN_BO"}
-                  className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing && form.Quyen === "ADMIN_TOAN_BO" ? 'bg-slate-100 border-slate-200 text-slate-500 appearance-none' : 'border-slate-300'}`}
-                >
-                  {isEditing && form.Quyen === "ADMIN_TOAN_BO" ? (
-                    // If editing an ADMIN_TOAN_BO account, only show this option (and it's disabled by the select parent)
-                    <option key="ADMIN_TOAN_BO" value="ADMIN_TOAN_BO">ADMIN_TOAN_BO - Admin toàn bộ</option>
-                  ) : (
-                    // Otherwise (creating new or editing non-ADMIN_TOAN_BO), show only NHAN_VIEN and ADMIN_CHI_NHANH
-                    // The ADMIN_TOAN_BO option is completely removed from the list for these cases.
-                    ["NHAN_VIEN", "ADMIN_CHI_NHANH"].map(role => (
-                      <option
-                        key={role}
-                        value={role}
-                      >
-                        {role === "NHAN_VIEN" ? "NHAN_VIEN - Nhân viên" : "ADMIN_CHI_NHANH - Admin chi nhánh"}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
-              <div className="flex gap-3 mt-2">
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg flex-1 transition-colors">{isEditing ? "Lưu thay đổi" : "Tạo tài khoản"}</button>
-                <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={closeFormModal}>Hủy</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+              <div className="p-6 border-b border-indigo-100 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-slate-800">{isEditing ? "Cập nhật tài khoản" : "Tạo tài khoản mới"}</h3>
+                <button onClick={closeFormModal} className="text-slate-400 hover:text-slate-600">✕</button>
               </div>
-            </form>
-          </dialog>
+              <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Tên đăng nhập</span>
+                  <input value={form.TenDangNhap} onChange={(e) => setForm({ ...form, TenDangNhap: e.target.value })} required readOnly={isEditing} className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing ? 'bg-slate-100 border-slate-200 text-slate-500' : 'border-slate-300'}`} />
+                </label>
+                {!isEditing && (
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-slate-700">Mật khẩu</span>
+                    <input type="password" value={form.MatKhau} onChange={(e) => setForm({ ...form, MatKhau: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </label>
+                )}
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Mã nhân viên</span>
+                  <select value={form.MaNV} onChange={(e) => setForm({ ...form, MaNV: e.target.value })} required disabled={isEditing} className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing ? 'bg-slate-100 border-slate-200 text-slate-500 appearance-none' : 'border-slate-300'}`}>
+                    <option value="">-- Chọn nhân viên --</option>
+                    {availableEmployees.map(emp => (
+                      <option key={emp.MaNV} value={emp.MaNV}>{emp.HoTen} ({emp.MaNV}) - {emp.ChiNhanh}</option>
+                    ))}
+                  </select>
+                  {availableEmployees.length === 0 && !isEditing && (
+                    <span className="text-xs text-red-500 mt-1">Tất cả nhân viên đều đã có tài khoản.</span>
+                  )}
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Quyền</span>
+                  <select
+                    value={form.Quyen}
+                    onChange={(e) => setForm({ ...form, Quyen: e.target.value })}
+                    required
+                    disabled={isEditing && form.Quyen === "ADMIN_TOAN_BO"}
+                    className={`px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isEditing && form.Quyen === "ADMIN_TOAN_BO" ? 'bg-slate-100 border-slate-200 text-slate-500 appearance-none' : 'border-slate-300'}`}
+                  >
+                    {isEditing && form.Quyen === "ADMIN_TOAN_BO" ? (
+                      <option key="ADMIN_TOAN_BO" value="ADMIN_TOAN_BO">ADMIN_TOAN_BO - Admin toàn bộ</option>
+                    ) : (
+                      ["NHAN_VIEN", "ADMIN_CHI_NHANH"].map(role => (
+                        <option key={role} value={role}>
+                          {role === "NHAN_VIEN" ? "NHAN_VIEN - Nhân viên" : "ADMIN_CHI_NHANH - Admin chi nhánh"}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+                <div className="flex gap-3 mt-2">
+                  <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg flex-1 transition-colors">{isEditing ? "Lưu thay đổi" : "Tạo tài khoản"}</button>
+                  <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={closeFormModal}>Hủy</button>
+                </div>
+              </form>
+            </div>
+          </div>
         );
       })()}
     </CentralLayout>

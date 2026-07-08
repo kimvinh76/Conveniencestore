@@ -73,7 +73,7 @@ export default function UserMenu() {
       )}
 
       {changeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setChangeOpen(false)}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4" onClick={() => setChangeOpen(false)}>
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-2xl font-black text-slate-900 mb-4">Đổi mật khẩu</h3>
             <form className="space-y-4" onSubmit={handleChangePassword}>

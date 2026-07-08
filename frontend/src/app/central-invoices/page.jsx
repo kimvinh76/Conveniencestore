@@ -1,15 +1,10 @@
 "use client";
-import { useEffect, useState, useMemo, useRef } from "react";
-
-const FILTER_BRANCH_MAP = {
-  HUE: "HUE",
-  SAIGON: "SAIGON",
-  HANOI: "HANOI",
-};
+import { useEffect, useState, useMemo } from "react";
 import CentralLayout from "@/components/layouts/CentralLayout";
 import { apiFetch } from "@/components/api";
 import DataTable from "@/components/DataTable";
 import { useToast } from "@/contexts/ToastContext";
+import { useModal } from "@/hooks/useModal";
 
 export default function Page() {
   const [invoices, setInvoices] = useState([]);
@@ -20,7 +15,7 @@ export default function Page() {
   const [detailsTitle, setDetailsTitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const showNotification = useToast();
-  const modalRef = useRef(null);
+  const { isOpen: isDetailsOpen, open: openDetailsModal, close: closeDetailsModal } = useModal();
 
   const load = async (branch = selectedBranch) => {
     setLoading(true);
@@ -55,7 +50,7 @@ export default function Page() {
       const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=${selectedBranch}`);
       setDetails(Array.isArray(data.data) ? data.data : data);
       setDetailsTitle(row.MaHD);
-      modalRef.current?.showModal();
+      openDetailsModal();
     } catch (err) {
       showNotification(err.message, "error");
     }
@@ -104,15 +99,19 @@ export default function Page() {
       </div>
 
       {/* Modal Chi tiết hóa đơn */}
-      <dialog ref={modalRef} className="modal w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-slate-800">Chi tiết hóa đơn: <span className="text-blue-600">{detailsTitle}</span></h3>
-          <button className="text-slate-400 hover:text-slate-600 font-bold" onClick={() => modalRef.current?.close()}>✕</button>
+      {isDetailsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-800">Chi tiết hóa đơn: <span className="text-blue-600">{detailsTitle}</span></h3>
+              <button className="text-slate-400 hover:text-slate-600 font-bold" onClick={closeDetailsModal}>✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              <DataTable rows={details} />
+            </div>
+          </div>
         </div>
-        <div className="p-6 overflow-y-auto max-h-[70vh]">
-          <DataTable rows={details} />
-        </div>
-      </dialog>
+      )}
 
     </CentralLayout>
   );

@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import BranchLayout from "@/components/layouts/BranchLayout";
 import { apiFetch } from "@/components/api";
 import { useBranch } from "@/components/useBranch";
+import { useModal } from "@/hooks/useModal";
 
 export default function Page() {
   const { branch, auth } = useBranch({ requireLocal: true });
@@ -13,11 +14,7 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Quyền: ADMIN_CHI_NHANH và ADMIN_TOAN_BO
-  const canManage = auth?.role === "ADMIN_CHI_NHANH" || auth?.role === "ADMIN_TOAN_BO";
-  const isNhanVien = auth?.role === "NHAN_VIEN";
-
-  const formModalRef = useRef(null);
+  const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
 
   // Chặn truy cập nếu là NHAN_VIEN cố tình gõ URL
   if (isNhanVien) {
@@ -59,14 +56,7 @@ export default function Page() {
 
   const openAddModal = () => {
     setForm({ TenDangNhap: "", MatKhau: "", MaNV: "" });
-    formModalRef.current?.showModal();
-  };
-
-  const closeFormModal = () => formModalRef.current?.close();
-
-  const openDeleteModal = (acc) => {
-    setAccountToDelete(acc);
-    deleteModalRef.current?.showModal();
+    openFormModal();
   };
 
   const handleSubmit = async (e) => {
@@ -85,23 +75,6 @@ export default function Page() {
       });
       setResult(JSON.stringify(res, null, 2));
       closeFormModal();
-      loadAccounts();
-    } catch (err) {
-      setResult(`Lỗi: ${err.message || String(err)}`);
-      alert(`Lỗi: ${err.message || String(err)}`);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!accountToDelete || !branch) return;
-    try {
-      const res = await apiFetch(`/api/accounts/branch/${accountToDelete.TenDangNhap}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branch }),
-      });
-      setResult(JSON.stringify(res, null, 2));
-      deleteModalRef.current?.close();
       loadAccounts();
     } catch (err) {
       setResult(`Lỗi: ${err.message || String(err)}`);
@@ -224,45 +197,47 @@ export default function Page() {
       </div>
 
       {/* Lọc danh sách nhân viên chưa có tài khoản */}
-      {(() => {
+      {isFormOpen && (() => {
         const availableEmployees = employees.filter(emp => !accounts.some(acc => acc.MaNV === emp.MaNV));
         
         return (
-          <dialog ref={formModalRef} className="modal w-full max-w-md bg-white rounded-2xl shadow-2xl p-0 backdrop:bg-slate-900/50">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Tạo tài khoản mới</h3>
-              <button onClick={closeFormModal} className="text-slate-400 hover:text-slate-600">✕</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-slate-800">Tạo tài khoản mới</h3>
+                <button onClick={closeFormModal} className="text-slate-400 hover:text-slate-600">✕</button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Tên đăng nhập</span>
+                  <input value={form.TenDangNhap} onChange={(e) => setForm({ ...form, TenDangNhap: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Mật khẩu</span>
+                  <input type="password" value={form.MatKhau} onChange={(e) => setForm({ ...form, MatKhau: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-slate-700">Nhân viên</span>
+                  <select value={form.MaNV} onChange={(e) => setForm({ ...form, MaNV: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">-- Chọn nhân viên --</option>
+                    {availableEmployees.map(emp => (
+                      <option key={emp.MaNV} value={emp.MaNV}>{emp.MaNV} - {emp.HoTen}</option>
+                    ))}
+                  </select>
+                  {availableEmployees.length === 0 && (
+                    <span className="text-xs text-red-500 mt-1">Tất cả nhân viên đều đã có tài khoản.</span>
+                  )}
+                </label>
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 p-3 rounded-lg text-sm">
+                   Tài khoản sẽ được tạo với quyền <strong>NHAN_VIEN</strong>. Muốn nâng quyền, liên hệ Admin Toàn Bộ.
+                </div>
+                <div className="flex gap-3 mt-2">
+                  <button type="submit" className="btn-primary flex-1">Tạo tài khoản</button>
+                  <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={closeFormModal}>Hủy</button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Tên đăng nhập</span>
-                <input value={form.TenDangNhap} onChange={(e) => setForm({ ...form, TenDangNhap: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Mật khẩu</span>
-                <input type="password" value={form.MatKhau} onChange={(e) => setForm({ ...form, MatKhau: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-slate-700">Nhân viên</span>
-                <select value={form.MaNV} onChange={(e) => setForm({ ...form, MaNV: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                  <option value="">-- Chọn nhân viên --</option>
-                  {availableEmployees.map(emp => (
-                    <option key={emp.MaNV} value={emp.MaNV}>{emp.MaNV} - {emp.HoTen}</option>
-                  ))}
-                </select>
-                {availableEmployees.length === 0 && (
-                  <span className="text-xs text-red-500 mt-1">Tất cả nhân viên đều đã có tài khoản.</span>
-                )}
-              </label>
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-3 rounded-lg text-sm">
-                 Tài khoản sẽ được tạo với quyền <strong>NHAN_VIEN</strong>. Muốn nâng quyền, liên hệ Admin Toàn Bộ.
-              </div>
-              <div className="flex gap-3 mt-2">
-                <button type="submit" className="btn-primary flex-1">Tạo tài khoản</button>
-                <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={closeFormModal}>Hủy</button>
-              </div>
-            </form>
-          </dialog>
+          </div>
         );
       })()}
     </BranchLayout>

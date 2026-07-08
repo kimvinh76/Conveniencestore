@@ -22,10 +22,11 @@ export function ToastProvider({ children }) {
         position: 'fixed',
         top: '20px',
         right: '20px',
-        zIndex: 9999,
+        zIndex: 2147483647,
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px'
+        gap: '10px',
+        pointerEvents: 'none'
       }}>
         {toasts.map(toast => (
           <div
@@ -39,7 +40,8 @@ export function ToastProvider({ children }) {
               fontWeight: '500',
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               animation: 'slideIn 0.3s ease-out',
-              maxWidth: '400px'
+              maxWidth: '400px',
+              pointerEvents: 'auto'
             }}
           >
             {toast.message}

@@ -1,4 +1,5 @@
 const { sql, isMockMode, getPool } = require("../db/sqlserver");
+const { getBranchConfig } = require("../config/branches");
 const mock = require("../data/mock-store");
 
 const PROCS = {
@@ -8,45 +9,53 @@ const PROCS = {
   delete: "dbo.usp_Local_XoaNhanVien",
 };
 
-async function listEmployeesByBranch(branch) {
-  if (isMockMode()) return mock.listEmployeesByBranch(branch);
-  const pool = await getPool(branch);
+async function listEmployeesByBranch(branchCode) {
+  const branch = getBranchConfig(branchCode);
+  if (!branch) throw new Error(`Unsupported branch: ${branchCode}`);
+  if (isMockMode()) return mock.listEmployeesByBranch(branch.code);
+  const pool = await getPool(branch.code);
   const result = await pool.request().execute(PROCS.list);
   return result.recordset;
 }
 
-async function createEmployee(branch, payload) {
-  if (isMockMode()) return mock.createEmployee(branch, payload);
-  const pool = await getPool(branch);
-  const maNV = payload.MaNV || `${branch[0]}${String(Date.now()).slice(-4)}`;
+async function createEmployee(branchCode, payload) {
+  const branch = getBranchConfig(branchCode);
+  if (!branch) throw new Error(`Unsupported branch: ${branchCode}`);
+  if (isMockMode()) return mock.createEmployee(branch.code, payload);
+  const pool = await getPool(branch.code);
+  const maNV = payload.MaNV || `${branch.code[0]}${String(Date.now()).slice(-4)}`;
   const rs = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
     .input("HoTen", sql.NVarChar(120), payload.HoTen)
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
     .input("Email", sql.VarChar(100), payload.Email || null)
-    .input("ChiNhanh", sql.VarChar(10), branch)
+    .input("ChiNhanh", sql.VarChar(10), branch.code)
     .execute(PROCS.create);
   return rs.recordset[0] || null;
 }
 
-async function updateEmployee(branch, maNV, payload) {
-  if (isMockMode()) return mock.updateEmployee(branch, maNV, payload);
-  const pool = await getPool(branch);
+async function updateEmployee(branchCode, maNV, payload) {
+  const branch = getBranchConfig(branchCode);
+  if (!branch) throw new Error(`Unsupported branch: ${branchCode}`);
+  if (isMockMode()) return mock.updateEmployee(branch.code, maNV, payload);
+  const pool = await getPool(branch.code);
   const rs = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
     .input("HoTen", sql.NVarChar(120), payload.HoTen || null)
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu || null)
     .input("Email", sql.VarChar(100), payload.Email || null)
-    .input("ChiNhanh", sql.VarChar(10), branch)
+    .input("ChiNhanh", sql.VarChar(10), branch.code)
     .execute(PROCS.update);
   return rs.recordset[0];
 }
 
-async function deleteEmployee(branch, maNV) {
-  if (isMockMode()) return mock.deleteEmployee(branch, maNV);
-  const pool = await getPool(branch);
+async function deleteEmployee(branchCode, maNV) {
+  const branch = getBranchConfig(branchCode);
+  if (!branch) throw new Error(`Unsupported branch: ${branchCode}`);
+  if (isMockMode()) return mock.deleteEmployee(branch.code, maNV);
+  const pool = await getPool(branch.code);
   const beforeDelete = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
@@ -56,7 +65,7 @@ async function deleteEmployee(branch, maNV) {
   
   await pool.request()
     .input("MaNV", sql.VarChar(50), maNV)
-    .input("ChiNhanh", sql.VarChar(10), branch)
+    .input("ChiNhanh", sql.VarChar(10), branch.code)
     .execute(PROCS.delete);
   return beforeDelete.recordset[0];
 }

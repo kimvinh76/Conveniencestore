@@ -21,8 +21,8 @@ export default function Page() {
   const showNotification = useToast();
   const canManage = auth?.role === "ADMIN_CHI_NHANH" || auth?.role === "ADMIN_TOAN_BO";
 
-  const { modalRef: formModalRef, openModal: openFormModal, closeModal: closeFormModal } = useModal();
-  const { modalRef: deleteModalRef, openModal: showDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
+  const { isOpen: isDeleteOpen, open: showDeleteModal, close: closeDeleteModal } = useModal();
 
   const loadEmployees = async () => {
     if (!branch) return;
@@ -130,23 +130,23 @@ export default function Page() {
         </section>
       </div>
 
-      {canManage && (
-        <>
-          <BranchEmployeeFormModal
-            ref={formModalRef}
-            form={form}
-            setForm={setForm}
-            isEditing={isEditing}
-            handleSubmit={handleSubmit}
-            onClose={closeFormModal}
-          />
-          <BranchDeleteConfirmationModal
-            ref={deleteModalRef}
-            employeeToDelete={employeeToDelete}
-            onConfirm={confirmDelete}
-            onClose={closeDeleteModal}
-          />
-        </>
+      {canManage && isFormOpen && (
+        <BranchEmployeeFormModal
+          form={form}
+          setForm={setForm}
+          isEditing={isEditing}
+          handleSubmit={handleSubmit}
+          onClose={closeFormModal}
+          isOpen={isFormOpen}
+        />
+      )}
+      {canManage && isDeleteOpen && (
+        <BranchDeleteConfirmationModal
+          employeeToDelete={employeeToDelete}
+          onConfirm={confirmDelete}
+          onClose={closeDeleteModal}
+          isOpen={isDeleteOpen}
+        />
       )}
     </BranchLayout>
   );

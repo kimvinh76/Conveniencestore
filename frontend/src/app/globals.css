@@ -84,5 +84,5 @@ label {
 }
 
 .modal::backdrop {
-  @apply bg-slate-900/50 backdrop-blur-sm;
+  background: transparent;
 }

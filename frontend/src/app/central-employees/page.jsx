@@ -15,8 +15,8 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { modalRef: formModalRef, openModal: openFormModal, closeModal: closeFormModal } = useModal();
-  const { modalRef: deleteModalRef, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
+  const { isOpen: isDeleteOpen, open: openDeleteModal, close: closeDeleteModal } = useModal();
   const load = async (branch = selectedBranch) => {
     setLoading(true);
     setError(null);
@@ -106,22 +106,26 @@ export default function Page() {
         </section>
       </div>
 
-      <EmployeeFormModal
-        ref={formModalRef}
-        form={form}
-        setForm={setForm}
-        isEditing={isEditing}
-        onClose={closeFormModal}
-        handleSubmit={handleSubmit}
-      />
+      {isFormOpen && (
+        <EmployeeFormModal
+          form={form}
+          setForm={setForm}
+          isEditing={isEditing}
+          onClose={closeFormModal}
+          handleSubmit={handleSubmit}
+          isOpen={isFormOpen}
+        />
+      )}
 
-      <DeleteConfirmationModal
-        ref={deleteModalRef}
-        employeeToDelete={employeeToDelete}
-        selectedBranch={selectedBranch}
-        onClose={closeDeleteModal}
-        onConfirm={confirmDelete}
-      />
+      {isDeleteOpen && (
+        <DeleteConfirmationModal
+          employeeToDelete={employeeToDelete}
+          selectedBranch={selectedBranch}
+          onClose={closeDeleteModal}
+          onConfirm={confirmDelete}
+          isOpen={isDeleteOpen}
+        />
+      )}
     </CentralLayout>
   );
 }
