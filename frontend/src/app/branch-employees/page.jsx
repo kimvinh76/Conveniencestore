@@ -63,18 +63,17 @@ export default function Page() {
     e.preventDefault();
     if (!branch) return;
     try {
-      const payload = { ...form, branch };
       if (isEditing) {
         await apiFetch(`/api/employees/${form.MaNV}?branch=${branch}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ HoTen: payload.HoTen, ChucVu: payload.ChucVu, Email: payload.Email }),
+          body: JSON.stringify({ HoTen: form.HoTen, ChucVu: form.ChucVu, Email: form.Email }),
         });
       } else {
-        await apiFetch("/api/employees", {
+        await apiFetch(`/api/employees?branch=${branch}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(form),
         });
       }
       showNotification(isEditing ? "Cập nhật nhân viên thành công" : "Thêm nhân viên thành công", "success");

@@ -15,9 +15,10 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
 
   const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
+  const canManage = auth?.role === "ADMIN_CHI_NHANH" || auth?.role === "ADMIN_TOAN_BO";
 
   // Chặn truy cập nếu là NHAN_VIEN cố tình gõ URL
-  if (isNhanVien) {
+  if (auth?.role === "NHAN_VIEN") {
     return (
       <BranchLayout active="accounts">
         <div className="bg-red-50 text-red-700 p-8 rounded-2xl border border-red-200 text-center mt-10">

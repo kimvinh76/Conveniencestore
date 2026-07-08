@@ -14,8 +14,8 @@ exports.listEmployees = async (req, res) => {
 
 exports.createEmployee = async (req, res) => {
   try {
-    const branch = normalizeBranch(req.body.branch);
-    if (!branch) return res.status(400).json({ message: "branch is required" });
+    const branch = normalizeBranch(req.query.branch);
+    if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
     const payload = {
       MaNV: String(req.body.MaNV || "").trim() || null,
       HoTen: String(req.body.HoTen || "").trim(),
@@ -32,6 +32,7 @@ exports.createEmployee = async (req, res) => {
 exports.updateEmployee = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
+    if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
     const { employeeId } = req.params;
     const payload = {
       HoTen: req.body.HoTen ? String(req.body.HoTen).trim() : null,
@@ -48,6 +49,7 @@ exports.updateEmployee = async (req, res) => {
 exports.deleteEmployee = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
+    if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
     const { employeeId } = req.params;
     const data = await employeeService.deleteEmployee(branch, employeeId);
     res.json({ message: "Employee deleted", data });

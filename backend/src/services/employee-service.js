@@ -74,9 +74,9 @@ async function listAllEmployeesFromCentral() {
   if (isMockMode()) return mock.listAllEmployees();
   const pool = await getPool("CENTRAL");
   const branches = [
-    { code: "HUE", server: "HUE_SERVER", db: "Store_H" },
-    { code: "SAIGON", server: "SG_SERVER", db: "Store_SG" },
-    { code: "HANOI", server: "HN_SERVER", db: "Store_HN" }
+    { code: "HUE", server: process.env.LINKED_HUE || "HUE_SERVER", db: process.env.HUE_DB_NAME || "Store_H" },
+    { code: "SAIGON", server: process.env.LINKED_SAIGON || "SG_SERVER", db: process.env.SAIGON_DB_NAME || "Store_SG" },
+    { code: "HANOI", server: process.env.LINKED_HANOI || "HN_SERVER", db: process.env.HANOI_DB_NAME || "Store_HN" }
   ];
   const results = [];
   for (const b of branches) {

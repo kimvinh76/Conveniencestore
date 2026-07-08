@@ -70,8 +70,8 @@ export default function Page() {
     e.preventDefault();
     try {
       const method = isEditing ? "PUT" : "POST";
-      const url = isEditing ? `/api/employees/${form.MaNV}?branch=${selectedBranch}` : `/api/employees`;
-      const payload = isEditing ? { HoTen: form.HoTen, ChucVu: form.ChucVu, Email: form.Email } : { ...form, branch: selectedBranch };
+      const url = isEditing ? `/api/employees/${form.MaNV}?branch=${selectedBranch}` : `/api/employees?branch=${selectedBranch}`;
+      const payload = isEditing ? { HoTen: form.HoTen, ChucVu: form.ChucVu, Email: form.Email } : form;
       await apiFetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       showNotification(isEditing ? "Cập nhật nhân viên thành công" : "Thêm nhân viên mới thành công", "success");
       closeFormModal();
