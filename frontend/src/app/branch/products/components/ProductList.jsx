@@ -2,13 +2,13 @@
 import React, { useMemo, useState } from "react";
 import ProductCard from "./ProductCard";
 
-export default function ProductList({ products, productImages, productDescriptions }) {
+export default function ProductList({ products }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return products;
     const lower = searchTerm.toLowerCase();
-    return products.filter(p => 
+    return products.filter(p =>
       (p.productName || "").toLowerCase().includes(lower) ||
       (p.productCode || "").toLowerCase().includes(lower)
     );
@@ -21,9 +21,9 @@ export default function ProductList({ products, productImages, productDescriptio
         <span className="text-sm font-semibold text-slate-500">
           Tìm thấy <span className="text-teal-600 font-bold">{filteredProducts.length}</span> sản phẩm
         </span>
-        <input 
-          type="text" 
-          placeholder="🔍 Tìm theo mã hoặc tên sản phẩm..." 
+        <input
+          type="text"
+          placeholder="🔍 Tìm theo mã hoặc tên sản phẩm..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className="w-full sm:w-80 px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-slate-50"
@@ -37,11 +37,9 @@ export default function ProductList({ products, productImages, productDescriptio
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map(p => (
-            <ProductCard 
-              key={p.productCode} 
-              product={p} 
-              image={productImages[p.productCode]}
-              description={productDescriptions[p.productCode]}
+            <ProductCard
+              key={p.productCode}
+              product={p}
             />
           ))}
         </div>

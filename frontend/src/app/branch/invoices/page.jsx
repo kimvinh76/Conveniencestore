@@ -10,23 +10,6 @@ import CartView from "./components/CartView";
 import HistoryView from "./components/HistoryView";
 import InvoiceDetailsModal from "./components/InvoiceDetailsModal";
 
-// Bản đồ hình ảnh sản phẩm 
-const PRODUCT_IMAGES = {
-  MI_GOI: "/images/migoi.png",
-  SUA_HOP: "/images/sua_hop.png",
-  NUOC_SUOI: "/images/nuoc_suoi.png",
-  BANH_SNACK: "/images/banh_snack.png",
-  CA_PHE_LON: "/images/ca_phe_lon.png",
-  TRA_XANH: "/images/tra_xanh.png",
-  KEO_CAOSUG: "/images/keocaosu.png",
-  NUOC_NGOT: "/images/nuocngot.png",
-  MUT_KHO: "/images/mutkho.png",
-  CA_PHE_LON: "/images/caphe.png",
-  BANH_SNACK: "/images/banhsnack.png",
-  TRA_XANH: "/images/traxanh.png",
-  SUA_HOP: "/images/suahop.png"
-};
-
 export default function Page() {
   const { branch, auth } = useBranch({ requireLocal: true });
   const [activeTab, setActiveTab] = useState("pos");
@@ -198,7 +181,6 @@ export default function Page() {
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               addToCart={addToCart}
-              productImages={PRODUCT_IMAGES}
             />
             <CartView
               cartItems={cartItems}

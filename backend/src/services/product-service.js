@@ -26,6 +26,9 @@ async function listProducts(branch) {
         hh.MaSP AS productCode,
         hh.TenHang AS productName,
         CAST(hh.Gia AS DECIMAL(10,2)) AS unitPrice,
+        hh.MoTa AS description,
+        hh.AnhSanPham AS imageUrl,
+        hh.DonViTinh AS unit,
         ISNULL(tk.SoLuongTon, 0) AS stock
       FROM dbo.HangHoa hh
       LEFT JOIN dbo.TonKho tk ON tk.MaSP = hh.MaSP AND tk.ChiNhanh = @Branch
@@ -47,19 +50,22 @@ async function getProductByCode(branch, productCode) {
     .input("MaSP", sql.VarChar(50), productCode)
     .execute(PROCS.byCode);
   const row = rs.recordset[0];
-  return row ? { branch, productCode: row.MaSP, productName: row.TenHang, unitPrice: Number(row.Gia || 0) } : null;
+  return row ? { branch, productCode: row.MaSP, productName: row.TenHang, unitPrice: Number(row.Gia || 0), description: row.MoTa, imageUrl: row.AnhSanPham, unit: row.DonViTinh } : null;
 }
 
 async function createProduct(payload) {
   if (isMockMode()) return mock.createProduct(payload);
   const pool = await getPool("CENTRAL");
-  const { productCode, productName, unitPrice } = payload;
+  const { productCode, productName, unitPrice, description, imageUrl, unit } = payload;
   await pool.request()
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TenHang", sql.NVarChar(100), productName)
     .input("Gia", sql.Decimal(10, 2), unitPrice)
+    .input("MoTa", sql.NVarChar(500), description || null)
+    .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
+    .input("DonViTinh", sql.NVarChar(50), unit || null)
     .execute(PROCS.create);
-  return { productCode, productName, unitPrice };
+  return { productCode, productName, unitPrice, description, imageUrl, unit };
 }
 
 async function updateProduct(productCode, payload) {
@@ -69,6 +75,9 @@ async function updateProduct(productCode, payload) {
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TenHang", sql.NVarChar(100), payload.productName || null)
     .input("Gia", sql.Decimal(10, 2), payload.unitPrice || null)
+    .input("MoTa", sql.NVarChar(500), payload.description || null)
+    .input("AnhSanPham", sql.VarChar(255), payload.imageUrl || null)
+    .input("DonViTinh", sql.NVarChar(50), payload.unit || null)
     .execute(PROCS.update);
   return { productCode, updated: true };
 }

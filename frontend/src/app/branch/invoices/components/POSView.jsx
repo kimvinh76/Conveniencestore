@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo } from "react";
 
-export default function POSView({ products, searchTerm, setSearchTerm, addToCart, productImages }) {
+export default function POSView({ products, searchTerm, setSearchTerm, addToCart }) {
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
     const lower = searchTerm.toLowerCase();
@@ -37,9 +37,9 @@ export default function POSView({ products, searchTerm, setSearchTerm, addToCart
                 ? "bg-slate-200 text-slate-400"
                 : "bg-teal-50 text-teal-600 group-hover:bg-teal-500 group-hover:text-white"
                 }`}>
-                {productImages[p.productCode] ? (
+                {p.imageUrl ? (
                   <img
-                    src={productImages[p.productCode]}
+                    src={p.imageUrl}
                     alt={p.productName}
                     className="w-20 h-20 object-contain rounded-lg"
                   />

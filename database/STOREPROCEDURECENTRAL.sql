@@ -1,4 +1,4 @@
-﻿
+
 use CentralDB 
 GO 
 
@@ -11,7 +11,10 @@ BEGIN
     SELECT
         MaSP AS productCode,
         TenHang AS productName,
-        CAST(Gia AS DECIMAL(10,2)) AS unitPrice
+        CAST(Gia AS DECIMAL(10,2)) AS unitPrice,
+        MoTa AS description,
+        AnhSanPham AS imageUrl,
+        DonViTinh AS unit
     FROM dbo.HangHoa
     ORDER BY MaSP;
 END;
@@ -30,7 +33,10 @@ BEGIN
     SELECT TOP 1 
         MaSP, 
         TenHang, 
-        CAST(Gia AS DECIMAL(10,2)) AS Gia
+        CAST(Gia AS DECIMAL(10,2)) AS Gia,
+        MoTa,
+        AnhSanPham,
+        DonViTinh
     FROM dbo.HangHoa
     WHERE MaSP = @MaSP;
 END;
@@ -39,7 +45,10 @@ GO
 CREATE OR ALTER PROCEDURE dbo.usp_Central_ThemHangHoaMoi
     @MaSP VARCHAR(50),
     @TenHang NVARCHAR(100),
-    @Gia DECIMAL(10,2)
+    @Gia DECIMAL(10,2),
+    @MoTa NVARCHAR(500) = NULL,
+    @AnhSanPham VARCHAR(255) = NULL,
+    @DonViTinh NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -60,8 +69,8 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        INSERT INTO dbo.HangHoa (MaSP, TenHang, Gia)
-        VALUES (@MaSP, @TenHang, @Gia);
+        INSERT INTO dbo.HangHoa (MaSP, TenHang, Gia, MoTa, AnhSanPham, DonViTinh)
+        VALUES (@MaSP, @TenHang, @Gia, @MoTa, @AnhSanPham, @DonViTinh);
 
         IF NOT EXISTS (SELECT 1 FROM dbo.TonKho WHERE MaSP = @MaSP AND ChiNhanh = 'HUE')
             INSERT INTO dbo.TonKho (MaSP, SoLuongTon, ChiNhanh) VALUES (@MaSP, 0, 'HUE');
@@ -93,7 +102,10 @@ GO
 CREATE OR ALTER PROCEDURE dbo.usp_Central_CapNhatHangHoa
     @MaSP VARCHAR(50),
     @TenHang NVARCHAR(100) = NULL,
-    @Gia DECIMAL(10,2) = NULL
+    @Gia DECIMAL(10,2) = NULL,
+    @MoTa NVARCHAR(500) = NULL,
+    @AnhSanPham VARCHAR(255) = NULL,
+    @DonViTinh NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -110,10 +122,13 @@ BEGIN
     -- CHỈ CẦN CẬP NHẬT TẠI CENTRAL 
     UPDATE dbo.HangHoa
     SET TenHang = COALESCE(NULLIF(LTRIM(RTRIM(@TenHang)), ''), TenHang),
-        Gia = COALESCE(@Gia, Gia)
+        Gia = COALESCE(@Gia, Gia),
+        MoTa = COALESCE(@MoTa, MoTa),
+        AnhSanPham = COALESCE(@AnhSanPham, AnhSanPham),
+        DonViTinh = COALESCE(@DonViTinh, DonViTinh)
     WHERE MaSP = @MaSP;
 
-    SELECT TOP 1 MaSP, TenHang, CAST(Gia AS DECIMAL(10,2)) AS Gia
+    SELECT TOP 1 MaSP, TenHang, CAST(Gia AS DECIMAL(10,2)) AS Gia, MoTa, AnhSanPham, DonViTinh
     FROM dbo.HangHoa
     WHERE MaSP = @MaSP;
 END;

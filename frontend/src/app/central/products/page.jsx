@@ -5,35 +5,11 @@ import { useToast } from "@/contexts/ToastContext";
 import { useModal } from "@/hooks/useModal";
 import ProductList from "./components/ProductList";
 
-const PRODUCT_IMAGES = {
-  MI_GOI: "/images/migoi.png",
-  SUA_HOP: "/images/suahop.png",
-  NUOC_SUOI: "/images/nuoc_suoi.png",
-  BANH_SNACK: "/images/banhsnack.png",
-  CA_PHE_LON: "/images/caphe.png",
-  TRA_XANH: "/images/traxanh.png",
-  KEO_CAOSUG: "/images/keocaosu.png",
-  NUOC_NGOT: "/images/nuocngot.png",
-  MUT_KHO: "/images/mutkho.png",
-};
-
-const PRODUCT_DESCRIPTIONS = {
-  MI_GOI: "Mì ăn liền thơm ngon, tiện lợi cho bữa ăn nhanh.",
-  SUA_HOP: "Sữa tươi tiệt trùng bổ sung dưỡng chất và năng lượng.",
-  NUOC_SUOI: "Nước khoáng tinh khiết, mát lạnh sảng khoái.",
-  BANH_SNACK: "Snack giòn rụm, hương vị đậm đà, ăn vặt cực đã.",
-  CA_PHE_LON: "Cà phê lon đậm vị cà phê sữa đá Việt Nam truyền thống.",
-  TRA_XANH: "Trà xanh tự nhiên thanh mát, ít ngọt, tốt cho sức khỏe.",
-  KEO_CAOSUG: "Kẹo cao su hương bạc hà thơm mát, sảng khoái tinh thần.",
-  NUOC_NGOT: "Nước ngọt có ga sảng khoái, đập tan cơn khát.",
-  MUT_KHO: "Mứt hoa quả sấy khô dẻo ngọt, thơm ngon tự nhiên.",
-};
-
 export default function Page() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ productCode: "", productName: "", unitPrice: "" });
+  const [form, setForm] = useState({ productCode: "", productName: "", unitPrice: "", imageUrl: "", description: "", unit: "" });
   const [isEditing, setIsEditing] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const showNotification = useToast();
@@ -50,6 +26,13 @@ export default function Page() {
         productCode: row.productCode || row.MaSP,
         productName: row.productName || row.TenHang,
         unitPrice: row.unitPrice ?? row.Gia,
+
+
+
+        imageUrl: row.imageUrl,
+        description: row.description,
+        unit: row.unit,
+
       }));
       setRows(normalized);
     } catch (err) {
@@ -60,17 +43,17 @@ export default function Page() {
   };
 
   useEffect(() => {
-    load().catch(() => {});
+    load().catch(() => { });
   }, []);
 
   const handleAdd = () => {
-    setForm({ productCode: "", productName: "", unitPrice: "" });
+    setForm({ productCode: "", productName: "", unitPrice: "", imageUrl: "", description: "", unit: "" });
     setIsEditing(false);
     openFormModal();
   };
 
   const handleEdit = (row) => {
-    setForm({ productCode: row.productCode, productName: row.productName, unitPrice: row.unitPrice });
+    setForm({ productCode: row.productCode, productName: row.productName, unitPrice: row.unitPrice, imageUrl: row.imageUrl || "", description: row.description || "", unit: row.unit || "" });
     setIsEditing(true);
     openFormModal();
   };
@@ -130,10 +113,8 @@ export default function Page() {
             Đang tải dữ liệu sản phẩm...
           </div>
         ) : (
-          <ProductList 
+          <ProductList
             products={rows}
-            productImages={PRODUCT_IMAGES}
-            productDescriptions={PRODUCT_DESCRIPTIONS}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
@@ -152,21 +133,33 @@ export default function Page() {
             <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-semibold text-slate-700">Mã sản phẩm</span>
-                <input 
-                  value={form.productCode} 
-                  onChange={e => setForm({...form, productCode: e.target.value})} 
-                  readOnly={isEditing} 
+                <input
+                  value={form.productCode}
+                  onChange={e => setForm({ ...form, productCode: e.target.value })}
+                  readOnly={isEditing}
                   className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${isEditing ? "bg-slate-100 text-slate-500" : "bg-white"}`}
-                  required 
+                  required
                 />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-semibold text-slate-700">Tên sản phẩm</span>
-                <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+                <input value={form.productName} onChange={e => setForm({ ...form, productName: e.target.value })} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-semibold text-slate-700">Giá bán gốc (VND)</span>
-                <input type="number" value={form.unitPrice} onChange={e => setForm({...form, unitPrice: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+                <input type="number" value={form.unitPrice} onChange={e => setForm({ ...form, unitPrice: e.target.value })} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" required />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Đơn vị tính</span>
+                <input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="VD: Gói, Hộp, Chai" />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Đường dẫn ảnh</span>
+                <input value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="/images/migoi.png" />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-slate-700">Mô tả sản phẩm</span>
+                <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all min-h-[80px]" placeholder="Nhập mô tả chi tiết..." />
               </label>
               <div className="flex gap-3 mt-4">
                 <button type="submit" className="btn-primary flex-1 font-bold">Lưu thông tin</button>

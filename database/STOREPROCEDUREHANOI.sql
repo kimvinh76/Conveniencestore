@@ -1,4 +1,4 @@
-﻿USE Store_HN;
+USE Store_HN;
 GO
 
 
@@ -522,13 +522,14 @@ BEGIN
     SELECT
         MaSP AS productCode,
         TenHang AS productName,
-        CAST(Gia AS DECIMAL(10,2)) AS unitPrice
+        CAST(Gia AS DECIMAL(10,2)) AS unitPrice,
+        MoTa AS description,
+        AnhSanPham AS imageUrl,
+        DonViTinh AS unit
     FROM dbo.HangHoa
     ORDER BY MaSP;
 END;
-GO 
-execute dbo.usp_Chung_DanhSachHangHoa
-
+GO
 CREATE OR ALTER PROCEDURE dbo.usp_Chung_HangHoaTheoMaSP
     @MaSP VARCHAR(50)
 AS
@@ -541,7 +542,10 @@ BEGIN
     SELECT TOP 1 
         MaSP, 
         TenHang, 
-        CAST(Gia AS DECIMAL(10,2)) AS Gia
+        CAST(Gia AS DECIMAL(10,2)) AS Gia,
+        MoTa,
+        AnhSanPham,
+        DonViTinh
     FROM dbo.HangHoa
     WHERE MaSP = @MaSP;
 END;

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-export default function ProductCard({ product, image, description }) {
+export default function ProductCard({ product }) {
   const stock = product.stock ?? 0;
   const isOutOfStock = stock <= 0;
 
@@ -9,20 +9,19 @@ export default function ProductCard({ product, image, description }) {
     <div className="bg-white rounded-2xl border border-slate-200 hover:border-teal-400 hover:shadow-md transition-all overflow-hidden flex flex-col h-full group">
       {/* Product Image */}
       <div className="bg-slate-50 h-40 flex items-center justify-center p-4 relative border-b border-slate-100">
-        {image ? (
-          <img 
-            src={image} 
-            alt={product.productName} 
-            className="h-32 object-contain group-hover:scale-105 transition-transform duration-200" 
+        {product.imageUrl ? (
+          <img
+            src={product.imageurl}
+            alt={product.productName}
+            className="h-32 object-contain group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
           <span className="text-5xl">🛍️</span>
         )}
-        
+
         {/* Local Stock Badge */}
-        <span className={`absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-bold text-white shadow-sm ${
-          stock > 10 ? "bg-emerald-600" : stock > 0 ? "bg-amber-500" : "bg-rose-600"
-        }`}>
+        <span className={`absolute top-3 right-3 text-xs px-2.5 py-1 rounded-full font-bold text-white shadow-sm ${stock > 10 ? "bg-emerald-600" : stock > 0 ? "bg-amber-500" : "bg-rose-600"
+          }`}>
           {isOutOfStock ? "Hết hàng" : `Tồn kho: ${stock}`}
         </span>
       </div>
@@ -33,7 +32,7 @@ export default function ProductCard({ product, image, description }) {
           <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded uppercase tracking-wider">
             {product.productCode}
           </span>
-          <span className="text-xs font-semibold text-slate-400">Đơn vị: Cái</span>
+          <span className="text-xs font-semibold text-slate-400">Đơn vị: {product.unit || "Cái"}</span>
         </div>
 
         <h3 className="font-bold text-slate-800 text-base line-clamp-1 group-hover:text-teal-600 transition-colors">
@@ -41,7 +40,7 @@ export default function ProductCard({ product, image, description }) {
         </h3>
 
         <p className="text-xs text-slate-500 line-clamp-2 flex-1">
-          {description || "Chưa có mô tả chi tiết cho sản phẩm này."}
+          {product.des || "Chưa có mô tả chi tiết cho sản phẩm này."}
         </p>
 
         <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">

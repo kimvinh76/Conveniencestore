@@ -1,14 +1,14 @@
 "use client";
 import React from "react";
 
-export default function ProductCard({ product, image, description, onEdit, onDelete }) {
+export default function ProductCard({ product, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all overflow-hidden flex flex-col h-full group">
       {/* Product Image */}
       <div className="bg-slate-50 h-40 flex items-center justify-center p-4 relative border-b border-slate-100">
-        {image ? (
+        {product.imageUrl ? (
           <img 
-            src={image} 
+            src={product.imageUrl} 
             alt={product.productName} 
             className="h-32 object-contain group-hover:scale-105 transition-transform duration-200" 
           />
@@ -28,7 +28,7 @@ export default function ProductCard({ product, image, description, onEdit, onDel
         </h3>
 
         <p className="text-xs text-slate-500 line-clamp-2 flex-1">
-          {description || "Chưa có mô tả chi tiết cho sản phẩm này."}
+          {product.description || "Chưa có mô tả chi tiết cho sản phẩm này."}
         </p>
 
         <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">

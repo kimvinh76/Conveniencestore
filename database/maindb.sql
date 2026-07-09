@@ -36,7 +36,10 @@ CREATE TABLE dbo.NhanVien (
 CREATE TABLE dbo.HangHoa (
     MaSP VARCHAR(50) NOT NULL PRIMARY KEY,
     TenHang NVARCHAR(100) NOT NULL,
-    Gia DECIMAL(10,2) NOT NULL CHECK (Gia >= 0)
+    Gia DECIMAL(10,2) NOT NULL CHECK (Gia >= 0),
+    MoTa NVARCHAR(500) NULL,
+    AnhSanPham VARCHAR(255) NULL,
+    DonViTinh NVARCHAR(50) NULL
 );
 
 CREATE TABLE dbo.HoaDon (
@@ -69,14 +72,14 @@ CREATE TABLE dbo.ChiTietHoaDon (
 );
 GO
 
-INSERT INTO dbo.HangHoa (MaSP, TenHang, Gia)
+INSERT INTO dbo.HangHoa (MaSP, TenHang, Gia, MoTa, AnhSanPham, DonViTinh)
 VALUES
-('MI_GOI', N'Mi goi', 12000),
-('SUA_HOP', N'Sua hop', 12000),
-('NUOC_SUOI', N'Nuoc suoi', 7000),
-('BANH_SNACK', N'Banh snack', 15000),
-('CA_PHE_LON', N'Ca phe lon', 18000),
-('TRA_XANH', N'Tra xanh', 10000);
+('MI_GOI', N'Mì gói Hảo Hảo chua cay', 12000, N'Mì gói hương vị tôm chua cay thơm ngon', '/images/migoi.png', N'Gói'),
+('SUA_HOP', N'Sữa tươi tiệt trùng', 12000, N'Sữa tươi nguyên chất 100% không đường', '/images/sua_hop.png', N'Hộp'),
+('NUOC_SUOI', N'Nước tinh khiết', 7000, N'Nước suối tinh khiết đóng chai 500ml', '/images/nuoc_suoi.png', N'Chai'),
+('BANH_SNACK', N'Snack khoai tây', 15000, N'Snack khoai tây chiên giòn rụm vị tự nhiên', '/images/banh_snack.png', N'Gói'),
+('CA_PHE_LON', N'Cà phê sữa lon', 18000, N'Cà phê sữa đóng lon tiện lợi, đậm đà', '/images/ca_phe_lon.png', N'Lon'),
+('TRA_XANH', N'Trà xanh không độ', 10000, N'Trà xanh đóng chai giải khát', '/images/tra_xanh.png', N'Chai');
 
 INSERT INTO dbo.NhanVien (MaNV, HoTen, ChucVu, ChiNhanh)
 VALUES
