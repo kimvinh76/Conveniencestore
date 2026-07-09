@@ -74,7 +74,7 @@ export default function BranchLayout({ children }) {
 
       {/* Main Content - Nằm bên phải */}
       <main className="flex-1 ml-64 p-8 min-h-screen">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="flex justify-end mb-4">
             <UserMenu />
           </div>

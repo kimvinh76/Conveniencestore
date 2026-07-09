@@ -11,10 +11,11 @@ export default function LoginPage() {
   const { auth, ready } = useBranch();
 
   useEffect(() => {
-
     if (ready && auth) {
       if (auth.branch === "CENTRAL") {
         router.replace("/central");
+      } else if (auth.role === "NHAN_VIEN") {
+        router.replace("/branch/invoices");
       } else {
         router.replace("/branch/dashboard");
       }
@@ -48,6 +49,8 @@ export default function LoginPage() {
       // Dựa vào branch trả về để điều hướng
       if (res.branch === "CENTRAL") {
         router.push("/central");
+      } else if (res.user?.role === "NHAN_VIEN") {
+        router.push("/branch/invoices");
       } else {
         router.push("/branch/dashboard");
       }

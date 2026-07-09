@@ -3,10 +3,19 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/services/api";
 import { useBranch } from "@/hooks/useBranch";
 import DynamicChart from "@/components/DynamicChart";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Page() {
-  const { branch } = useBranch({ requireLocal: true });
+  const { branch, auth } = useBranch({ requireLocal: true });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (auth && auth.role === "NHAN_VIEN") {
+      router.replace("/branch/invoices");
+    }
+  }, [auth, router]);
+
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
