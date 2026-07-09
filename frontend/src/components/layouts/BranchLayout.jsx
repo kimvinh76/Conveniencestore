@@ -19,14 +19,20 @@ export default function BranchLayout({ children }) {
     );
   }
 
-  const navItems = [
-    { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
-    { id: "employees", href: "/branch/employees", label: "Nhân viên" },
-    { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
-    { id: "products", href: "/branch/products", label: "Sản phẩm" },
-    { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
-    ...(auth?.role !== "NHAN_VIEN" ? [{ id: "accounts", href: "/branch/accounts", label: "Tài khoản" }] : []),
-  ];
+  const navItems = auth?.role === "NHAN_VIEN"
+    ? [
+        { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
+        { id: "products", href: "/branch/products", label: "Sản phẩm" },
+        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+      ]
+    : [
+        { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
+        { id: "employees", href: "/branch/employees", label: "Nhân viên" },
+        { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
+        { id: "products", href: "/branch/products", label: "Sản phẩm" },
+        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+        { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
+      ];
 
   const activeItem = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const active = activeItem ? activeItem.id : "dashboard";

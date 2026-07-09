@@ -97,6 +97,16 @@ export default function Page() {
     }
   };
 
+  // Chặn truy cập nếu là NHAN_VIEN cố tình gõ URL (ĐẶT SAU TOÀN BỘ HOOKS ĐỂ TRÁNH LỖI RULE OF HOOKS)
+  if (auth?.role === "NHAN_VIEN") {
+    return (
+      <div className="bg-red-50 text-red-700 p-8 rounded-2xl border border-red-200 text-center mt-10">
+        <h2 className="text-3xl font-bold mb-3">Truy cập bị từ chối</h2>
+        <p className="text-lg">Bạn không có quyền xem trang Quản lý nhân sự chi nhánh.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex flex-col gap-6 w-full">
