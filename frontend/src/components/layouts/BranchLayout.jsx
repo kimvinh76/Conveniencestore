@@ -25,7 +25,7 @@ export default function BranchLayout({ children }) {
     { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
     { id: "products", href: "/branch/products", label: "Sản phẩm" },
     { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
-    { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
+    ...(auth?.role !== "NHAN_VIEN" ? [{ id: "accounts", href: "/branch/accounts", label: "Tài khoản" }] : []),
   ];
 
   const activeItem = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
@@ -45,25 +45,25 @@ export default function BranchLayout({ children }) {
             <div className="text-slate-400 text-xs">{auth?.fullName || auth?.title || ""}</div>
           </div>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
-            <Link 
-              key={item.id} 
+            <Link
+              key={item.id}
               href={item.href}
-              className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
-                active === item.id 
-                  ? "bg-teal-600 text-white shadow-md" 
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
-              }`}
+              className={`block px-4 py-3 rounded-lg font-medium transition-colors ${active === item.id
+
+                ? "bg-teal-600 text-white shadow-md"
+                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                }`}
             >
               {item.label}
             </Link>
           ))}
         </nav>
-        
+
         <div className="p-4 border-t border-slate-700">
-          <button 
+          <button
             onClick={logout}
             className="w-full py-2 px-4 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white rounded-lg transition-colors font-medium text-left"
           >
@@ -74,7 +74,7 @@ export default function BranchLayout({ children }) {
 
       {/* Main Content - Nằm bên phải */}
       <main className="flex-1 ml-64 p-8 min-h-screen">
-        <div className="w-full">
+        <div className="max-w-7xl mx-auto">
           <div className="flex justify-end mb-4">
             <UserMenu />
           </div>

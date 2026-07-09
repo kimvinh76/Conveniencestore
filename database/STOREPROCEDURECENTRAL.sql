@@ -381,6 +381,10 @@ BEGIN
     IF EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap)
         THROW 50002, N'Tên đăng nhập đã tồn tại!', 1;
 
+    -- Mỗi nhân viên chỉ được có 1 tài khoản (quan hệ 1-1)
+    IF EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE MaNV = @MaNV)
+        THROW 50003, N'Nhân viên này đã có tài khoản trong hệ thống!', 1;
+
     INSERT INTO dbo.TaiKhoan (TenDangNhap, MatKhau, MaNV, Quyen, TrangThai)
     VALUES (@TenDangNhap, @MatKhau, @MaNV, @Quyen, COALESCE(@TrangThai, 1));
 END;
