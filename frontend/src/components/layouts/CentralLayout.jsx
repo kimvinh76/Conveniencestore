@@ -26,6 +26,7 @@ export default function CentralLayout({ children }) {
     { id: "employees", href: "/central/employees", label: "Nhân viên" },
     { id: "inventory", href: "/central/inventory", label: "Tồn kho" },
     { id: "transfer", href: "/central/transfer", label: "Chuyển kho" },
+    { id: "purchase-receipts", href: "/central/purchase-receipts", label: "Phiếu nhập kho" },
     { id: "accounts", href: "/central/accounts", label: "Tài khoản" },
   ];
 

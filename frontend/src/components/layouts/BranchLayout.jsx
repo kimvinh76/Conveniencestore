@@ -23,14 +23,13 @@ export default function BranchLayout({ children }) {
     ? [
         { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
         { id: "products", href: "/branch/products", label: "Sản phẩm" },
-        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
       ]
     : [
         { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
         { id: "employees", href: "/branch/employees", label: "Nhân viên" },
         { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
         { id: "products", href: "/branch/products", label: "Sản phẩm" },
-        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+        { id: "purchase-receipts", href: "/branch/purchase-receipts", label: "Nhập hàng" },
         { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
       ];
 
