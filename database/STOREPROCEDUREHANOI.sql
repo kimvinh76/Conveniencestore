@@ -831,152 +831,69 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.usp_Local_TaoPhieuNhap
+CREATE OR ALTER PROCEDURE dbo.usp_Local_TaoPhieuNhapNhieuDong
     @MaPN VARCHAR(50),
-    @GhiChu NVARCHAR(255) = NULL
+    @GhiChu NVARCHAR(255),
+    @ChiNhanhLap VARCHAR(10),
+    @ItemsJson NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@MaPN)), '') IS NULL
+        THROW 50000, N'Mã phiếu nhập không được để trống!', 1;
 
     IF EXISTS (SELECT 1 FROM dbo.PhieuNhap WHERE MaPN = @MaPN)
         THROW 50001, N'Mã phiếu nhập đã tồn tại!', 1;
 
-    INSERT INTO dbo.PhieuNhap (MaPN, ChiNhanh, GhiChu, TongTien)
-    VALUES (@MaPN, 'HANOI', @GhiChu, 0);
-END;
-GO
+    DECLARE @Items TABLE (
+        MaSP VARCHAR(50),
+        SoLuong INT,
+        DonGiaNhap DECIMAL(10,2)
+    );
 
-CREATE OR ALTER PROCEDURE dbo.usp_Local_CapNhatPhieuNhap
-    @MaPN VARCHAR(50),
-    @GhiChu NVARCHAR(255) = NULL,
-    @TongTien DECIMAL(18,2) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.PhieuNhap
-    SET GhiChu = COALESCE(NULLIF(LTRIM(RTRIM(@GhiChu)), ''), GhiChu),
-        TongTien = COALESCE(@TongTien, TongTien)
-    WHERE MaPN = @MaPN AND ChiNhanh = 'HANOI';
-
-    IF @@ROWCOUNT = 0
-        THROW 50001, N'Không tìm thấy phiếu nhập để cập nhật!', 1;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaPhieuNhap
-    @MaPN VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
+    INSERT INTO @Items (MaSP, SoLuong, DonGiaNhap)
+    SELECT MaSP, SoLuong, DonGiaNhap
+    FROM OPENJSON(@ItemsJson)
+    WITH (
+        MaSP VARCHAR(50) '$.MaSP',
+        SoLuong INT '$.SoLuong',
+        DonGiaNhap DECIMAL(10,2) '$.DonGiaNhap'
+    );
 
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        DELETE FROM dbo.ChiTietPhieuNhap WHERE MaPN = @MaPN;
-        DELETE FROM dbo.PhieuNhap WHERE MaPN = @MaPN AND ChiNhanh = 'HANOI';
+        -- 1. Thêm phiếu nhập
+        INSERT INTO dbo.PhieuNhap (MaPN, ChiNhanh, GhiChu, TongTien)
+        VALUES (@MaPN, 'HANOI', @GhiChu, 0);
 
-        IF @@ROWCOUNT = 0
-            THROW 50001, N'Không tìm thấy phiếu nhập để xóa!', 1;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachChiTietPhieuNhap
-    @MaPN VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT ctpn.MaPN, ctpn.MaSP, hh.TenHang, ctpn.SoLuong, ctpn.DonGiaNhap,
-           CAST(ctpn.SoLuong * ctpn.DonGiaNhap AS DECIMAL(18,2)) AS ThanhTienNhap
-    FROM dbo.ChiTietPhieuNhap ctpn
-    INNER JOIN dbo.PhieuNhap pn ON pn.MaPN = ctpn.MaPN AND pn.ChiNhanh = 'HANOI'
-    LEFT JOIN dbo.HangHoa hh ON hh.MaSP = ctpn.MaSP
-    WHERE ctpn.MaPN = @MaPN
-    ORDER BY ctpn.MaSP;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.usp_Local_ThemChiTietPhieuNhap
-    @MaPN VARCHAR(50),
-    @MaSP VARCHAR(50),
-    @SoLuong INT,
-    @DonGiaNhap DECIMAL(10,2)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.PhieuNhap WHERE MaPN = @MaPN AND ChiNhanh = 'HANOI')
-        THROW 50001, N'Phiếu nhập không thuộc chi nhánh HANOI!', 1;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.HangHoa WHERE MaSP = @MaSP)
-        THROW 50002, N'Sản phẩm không tồn tại!', 1;
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
+        -- 2. Thêm chi tiết phiếu nhập
         INSERT INTO dbo.ChiTietPhieuNhap (MaPN, MaSP, SoLuong, DonGiaNhap)
-        VALUES (@MaPN, @MaSP, @SoLuong, @DonGiaNhap);
+        SELECT @MaPN, MaSP, SoLuong, DonGiaNhap
+        FROM @Items;
 
-        UPDATE dbo.PhieuNhap
-        SET TongTien = TongTien + CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2))
-        WHERE MaPN = @MaPN;
+        -- 3. Cập nhật lại tổng tiền
+        DECLARE @TongTien DECIMAL(18,2);
+        SELECT @TongTien = SUM(CAST(SoLuong * DonGiaNhap AS DECIMAL(18,2))) FROM @Items;
+        UPDATE dbo.PhieuNhap SET TongTien = ISNULL(@TongTien, 0) WHERE MaPN = @MaPN;
 
-        UPDATE dbo.TonKho
-        SET SoLuongTon = SoLuongTon + @SoLuong
-        WHERE MaSP = @MaSP AND ChiNhanh = 'HANOI';
+        -- 4. Cập nhật tồn kho (NẾU ĐÃ CÓ)
+        UPDATE t
+        SET t.SoLuongTon = t.SoLuongTon + i.SoLuong
+        FROM dbo.TonKho t
+        JOIN @Items i ON i.MaSP = t.MaSP
+        WHERE t.ChiNhanh = 'HANOI';
 
-        IF @@ROWCOUNT = 0
-            INSERT INTO dbo.TonKho (MaSP, SoLuongTon, ChiNhanh)
-            VALUES (@MaSP, @SoLuong, 'HANOI');
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.usp_Local_XoaChiTietPhieuNhap
-    @MaPN VARCHAR(50),
-    @MaSP VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        DECLARE @SoLuong INT, @DonGiaNhap DECIMAL(10,2);
-
-        SELECT @SoLuong = SoLuong, @DonGiaNhap = DonGiaNhap
-        FROM dbo.ChiTietPhieuNhap
-        WHERE MaPN = @MaPN AND MaSP = @MaSP;
-
-        IF @SoLuong IS NULL
-            THROW 50001, N'Không tìm thấy chi tiết phiếu nhập để xóa!', 1;
-
-        DELETE FROM dbo.ChiTietPhieuNhap WHERE MaPN = @MaPN AND MaSP = @MaSP;
-
-        UPDATE dbo.PhieuNhap
-        SET TongTien = CASE WHEN TongTien - CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2)) < 0 THEN 0 ELSE TongTien - CAST(@SoLuong * @DonGiaNhap AS DECIMAL(18,2)) END
-        WHERE MaPN = @MaPN;
-
-        UPDATE dbo.TonKho
-        SET SoLuongTon = SoLuongTon - @SoLuong
-        WHERE MaSP = @MaSP AND ChiNhanh = 'HANOI';
+        -- 5. NẾU CHƯA CÓ, INSERT
+        INSERT INTO dbo.TonKho (MaSP, SoLuongTon, ChiNhanh)
+        SELECT i.MaSP, i.SoLuong, 'HANOI'
+        FROM @Items i
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dbo.TonKho t 
+            WHERE t.MaSP = i.MaSP AND t.ChiNhanh = 'HANOI'
+        );
 
         COMMIT TRANSACTION;
     END TRY
