@@ -13,6 +13,7 @@ const dashboardRoutes = require("./routes/dashboard");
 const analyticsRoutes = require("./routes/analytics");
 const transferRoutes = require("./routes/transfer");
 const accountsRoutes = require("./routes/accounts"); 
+const purchaseReceiptsRoutes = require("./routes/purchase-receipts");
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api", dashboardRoutes);
 app.use("/api", analyticsRoutes);
 app.use("/api", transferRoutes);
 app.use("/api/accounts", accountsRoutes);
+app.use("/api/purchase-receipts", purchaseReceiptsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: "Not found" });
