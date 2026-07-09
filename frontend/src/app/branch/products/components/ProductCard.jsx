@@ -11,7 +11,7 @@ export default function ProductCard({ product }) {
       <div className="bg-slate-50 h-40 flex items-center justify-center p-4 relative border-b border-slate-100">
         {product.imageUrl ? (
           <img
-            src={product.imageurl}
+            src={product.imageUrl}
             alt={product.productName}
             className="h-32 object-contain group-hover:scale-105 transition-transform duration-200"
           />
@@ -40,7 +40,7 @@ export default function ProductCard({ product }) {
         </h3>
 
         <p className="text-xs text-slate-500 line-clamp-2 flex-1">
-          {product.des || "Chưa có mô tả chi tiết cho sản phẩm này."}
+          {product.description || "Chưa có mô tả chi tiết cho sản phẩm này."}
         </p>
 
         <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">

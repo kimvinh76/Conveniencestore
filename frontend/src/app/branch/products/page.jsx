@@ -22,9 +22,8 @@ export default function Page() {
         productName: row.productName || row.TenHang,
         unitPrice: row.unitPrice ?? row.Gia,
         stock: row.stock ?? 0,
-        des: row.description,
-        imageurl: row.imageUrl,
-
+        description: row.description,
+        imageUrl: row.imageUrl,
         unit: row.unit,
       }));
       setRows(normalized);
