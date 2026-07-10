@@ -1,128 +1,59 @@
-﻿# DDBMS - Huong Dan Cai Dat Nhanh
+# Hệ Thống Quản Lý Cửa Hàng Tiện Lợi (DDBMS)
+
+ Dự án mô phỏng một hệ thống quản lý chuỗi cửa hàng tiện lợi đa chi nhánh với kiến trúc Cơ sở dữ liệu phân tán (Central, Hà Nội, Huế, Sài Gòn).
+
+##  Kiến Trúc Dự Án (Architecture)
+Hệ thống được thiết kế theo mô hình **Phân tán Giả lập (Pseudo-Distributed)** thông qua Docker, giúp tối ưu hóa tài nguyên (chỉ tốn khoảng 1/4 RAM so với việc chạy 4 máy ảo SQL Server riêng biệt) mà vẫn giữ nguyên được bản chất truy vấn phân tán.
+
+- **Frontend:** Next.js (React), TailwindCSS.
+- **Backend:** Node.js, Express.js.
+- **Database:** Microsoft SQL Server .
+- **Môi trường:** Docker (1 Container SQL Server chứa 4 Database và được cấu hình Loopback Linked Servers để giả lập kết nối mạng giữa các chi nhánh).
+
+##  Hướng Dẫn Cài Đặt & Chạy Dự Án
+
+Bạn có thể chạy dự án này theo 2 cách
+
+### Cách 1: Dành cho Cài đặt & Chạy Nhanh (Full Docker)
 
 
+1. Đảm bảo máy đã cài đặt Docker Desktop.
+2. Mở Terminal tại thư mục gốc của dự án.
+3. Chạy lệnh:
+   ```bash
+   docker compose up --build
+   ```
+4. Đợi Terminal báo `Backend API running` và Frontend đã khởi động.
+5. Truy cập Web tại: `http://localhost:3000`
 
-## 1. Yêu cầu
+### Cách 2: Dành cho Developer (Hybrid Mode - Khuyên dùng khi sửa code)
+Cách này giúp bạn code Frontend/Backend có Hot-reload ngay lập tức mà vẫn tận dụng được SQL Server ảo trong Docker.
 
-- Node.js 18+
-- SQL Server + SSMS
-- Đã bật TCP/IP trong SQL Server Configuration Manager
+1. **Khởi động riêng Database:**
+   ```bash
+   docker compose up database -d
+   ```
+2. **Khởi động Backend:** Mở Terminal mới, trỏ vào thư mục `backend`:
+   ```bash
+   cd backend
+   npm install
+   npm run dev
+   ```
+3. **Khởi động Frontend:** Mở Terminal mới, trỏ vào thư mục `frontend`:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+4. Truy cập Web tại: `http://localhost:3000`
 
-## 2 Chuẩn bị SQL
 
-Trước khi chạy script, cần tạo sẵn 4 database đúng tên:
+##  Tài Khoản Đăng Nhập Mặc Định
+*Thông tin tài khoản nằm trong dữ liệu mẫu của bảng `TaiKhoan`.*
 
-- `Store_H`
-- `Store_SG`
-- `Store_HN`
-- `CentralDB`
+- **Trung Tâm (Central):** `admin_central` / `123456`
+- **Hà Nội (Hanoi):** `admin_hanoi` / `123456`
+- **Huế (Hue):** `admin_hue` / `123456`
+- **Sài Gòn (Saigon):** `admin_saigon` / `123456`
 
-Lưu ý quan trọng:
-- File `maindb.sql` dùng lệnh `USE <DB>`, nên nếu chưa có đúng tên database thì script sẽ lỗi ngay.
-
-Trong thư mục `code`, chạy lần lượt các file SQL sau trong SSMS:
-
-1. `maindb.sql` (tạo bảng và dữ liệu nền)
-2. `STOREPROCEDUREHUE.sql` (proc cho chi nhánh HUE)
-3. `STOREPROCEDURESAIGON.sql` (proc cho chi nhánh SAIGON)
-4. `STOREPROCEDUREHANOI.sql` (proc cho chi nhánh HANOI)
-5. `STOREPROCEDURECENTRAL.sql` (proc cho CENTRAL)
-
-## 3. Cấu hình host/port trong SSMS
-
-### 3.1 Kiểm tra instance trong SSMS
-
-- Server Name có dạng: `MAY\INSTANCE`
-- Ví dụ: `DESKTOP-GVGU8JJ\MSSQLSERVER02`, `DESKTOP-GVGU8JJ\MSSQLSERVER05`
-
-### 3.2 Đặt TCP Port cho từng instance
-
-1. Mở SQL Server Configuration Manager.
-2. Vào `SQL Server Network Configuration` -> `Protocols for <INSTANCE>`.
-3. Enable `TCP/IP`.
-4. Mở `TCP/IP` -> `Properties` -> tab `IP Addresses`.
-5. Ở `IPAll`:
-   - `TCP Dynamic Ports` = rỗng
-   - `TCP Port` = port muốn dùng (ví dụ 1401/1402/1403/1404)
-6. Restart lại service SQL của instance đó.
-
-### 3.3 Map vào `.env`
-
-- `*_DB_HOST`: tên máy hoặc IP (ví dụ `localhost` hoặc `DESKTOP-GVGU8JJ`)
-- `*_DB_PORT`: port vừa đặt cho instance đó
-
-Lưu ý quan trọng:
-- Nếu host/port trên máy bạn khác, chỉ cần sửa lại trong `.env` cho đúng.
-
-## 4. Tạo file môi trường
-
-Copy `code/.env.example` thành `code/.env`.
-
-Sửa tối thiểu các giá trị kết nối SQL theo máy bạn:
-
-```env
-PORT=3000
-MOCK_MODE=false
-
-HUE_DB_HOST=localhost
-HUE_DB_PORT=1401
-HUE_DB_USER=sa
-HUE_DB_PASSWORD=YourPassword
-HUE_DB_NAME=Store_H
-
-SAIGON_DB_HOST=localhost
-SAIGON_DB_PORT=1402
-SAIGON_DB_USER=sa
-SAIGON_DB_PASSWORD=YourPassword
-SAIGON_DB_NAME=Store_SG
-
-HANOI_DB_HOST=localhost
-HANOI_DB_PORT=1403
-HANOI_DB_USER=sa
-HANOI_DB_PASSWORD=YourPassword
-HANOI_DB_NAME=Store_HN
-
-CENTRAL_DB_HOST=localhost
-CENTRAL_DB_PORT=1404
-CENTRAL_DB_USER=sa
-CENTRAL_DB_PASSWORD=YourPassword
-CENTRAL_DB_NAME=CentralDB
-
-LINKED_HUE=HUE_SERVER
-LINKED_SAIGON=SG_SERVER
-LINKED_HANOI=HN_SERVER
-```
-
-Lưu ý quan trọng:
-- Mật khẩu SQL trong `.env` phải đúng với tài khoản SQL Server (ví dụ `sa`).
-
-## 5. Linked server theo mô hình bạn đang dùng
-
-Mô hình hiện tại:
-- Không bắt buộc tạo linked server ở CENTRAL.
-- Tạo linked server trực tiếp ở từng chi nhánh để gọi qua chi nhánh khác.
-
-Ví dụ:
-- Ở node HUE có `LINK_SAIGON`, `LINK_HANOI`
-- Ở node SAIGON có `LINK_HUE`, `LINK_HANOI`
-- Ở node HANOI có `LINK_HUE`, `LINK_SAIGON`
-
-Lưu ý quan trọng:
-- Tên linked server trong proc/view phải khớp đúng với tên đã tạo trên node đó.
-
-## 6. Chạy ứng dụng
-
-Tại thư mục `code`:
-
-```bash
-npm install
-npm run dev
-```
-
-Mở trình duyệt: `http://localhost:3000`
-
-## 7. Nếu không kết nối được SQL
-
-- Kiểm tra SQL Server service đang chạy
-- Kiểm tra TCP/IP đã bật
-- Kiểm tra lại host/port/user/password trong `code/.env`
+*(Mật khẩu của tất cả tài khoản mặc định đều là 123456).*
