@@ -3,30 +3,22 @@ const mock = require("../data/mock-store");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachTonKho",
-  update: "dbo.usp_Local_CapNhatTonKhoTongQuat",
   transfer: "dbo.usp_Central_DieuChuyenKho"
 };
 
 async function listInventory(branch) {
-  if (isMockMode()) return mock.listInventory(branch);
+
+
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   return result.recordset.map(row => ({
+    branch: branch,
     productCode: row.MaSP,
     quantity: Number(row.SoLuongTon || 0)
   }));
 }
 
-async function updateInventoryItem(branch, productCode, quantity) {
-  if (isMockMode()) return mock.updateInventoryItem(branch, productCode, quantity);
-  const pool = await getPool(branch);
-  await pool.request()
-    .input("MaSP", sql.VarChar(50), productCode)
-    .input("SoLuongTonMoi", sql.Int, quantity)
-    .input("ChiNhanhLap", sql.VarChar(10), branch)
-    .execute(PROCS.update);
-  return { branch, productCode, quantity };
-}
+
 
 async function transferStockDistributed(payload) {
   if (isMockMode()) return mock.transferStock(payload);
@@ -50,4 +42,4 @@ async function transferStockDistributed(payload) {
   };
 }
 
-module.exports = { listInventory, updateInventoryItem, transferStockDistributed };
+module.exports = { listInventory, transferStockDistributed };

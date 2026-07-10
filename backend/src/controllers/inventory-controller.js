@@ -3,26 +3,21 @@ const { normalizeBranch } = require("../config/branches");
 
 exports.listInventory = async (req, res) => {
   try {
+    console.log("listInventory called with req.query.branch:", req.query.branch);
     const branch = normalizeBranch(req.query.branch);
-    if (!branch) return res.status(400).json({ message: "branch is required" });
+    if (!branch) {
+      console.log("normalizeBranch returned null for:", req.query.branch);
+      return res.status(400).json({ message: "branch is required" });
+    }
     const result = await inventoryService.listInventory(branch);
     res.json(result);
   } catch (error) {
+    console.error("listInventory Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-exports.updateInventory = async (req, res) => {
-  try {
-    const branch = normalizeBranch(req.query.branch);
-    const { productCode } = req.params;
-    const quantity = Number(req.body.quantity || 0);
-    const data = await inventoryService.updateInventoryItem(branch, productCode, quantity);
-    res.json({ message: "Inventory updated", data });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+
 
 exports.transferStock = async (req, res) => {
   try {
