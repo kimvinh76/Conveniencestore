@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "@/services/api";
 import { useToast } from "@/contexts/ToastContext";
 
-export default function PurchaseReceiptDetails({ receiptId, branch, onBack }) {
+export default function PurchaseReceiptDetails({ receiptId, branch, supplierName, onBack }) {
   const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const showNotification = useToast();
@@ -43,9 +43,16 @@ export default function PurchaseReceiptDetails({ receiptId, branch, onBack }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h2 className="text-lg font-semibold text-slate-800">
-            Chi tiết Phiếu Nhập: <span className="text-indigo-600">{receiptId}</span>
-          </h2>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">
+              Chi tiết Phiếu Nhập: <span className="text-indigo-600">{receiptId}</span>
+            </h2>
+            {supplierName && (
+              <p className="text-sm text-slate-500 mt-0.5">
+                Nhà cung cấp: <span className="font-semibold text-slate-700">{supplierName}</span>
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

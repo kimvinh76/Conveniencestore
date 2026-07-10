@@ -31,6 +31,7 @@ export default function PurchaseReceiptsList({ receipts, loading, onViewDetails 
           <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm font-semibold uppercase tracking-wider">
             <th className="p-4">Mã PN</th>
             <th className="p-4">Ngày Nhập</th>
+            <th className="p-4">Nhà Cung Cấp</th>
             <th className="p-4">Ghi Chú</th>
             <th className="p-4 text-right">Tổng Tiền</th>
             <th className="p-4 text-center">Thao tác</th>
@@ -42,6 +43,9 @@ export default function PurchaseReceiptsList({ receipts, loading, onViewDetails 
               <td className="p-4 font-medium text-indigo-600">{r.MaPN}</td>
               <td className="p-4 text-slate-600">
                 {new Date(r.NgayNhap).toLocaleString('vi-VN')}
+              </td>
+              <td className="p-4 font-medium text-slate-800">
+                {r.TenNCC || r.MaNCC || <span className="text-slate-400 italic">Không xác định</span>}
               </td>
               <td className="p-4 text-slate-600 max-w-xs truncate">
                 {r.GhiChu || <span className="text-slate-400 italic">Không có</span>}

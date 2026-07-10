@@ -29,6 +29,7 @@ class PurchaseReceiptService {
       .input("MaPN", mssql.VarChar, data.maPN)
       .input("GhiChu", mssql.NVarChar, data.ghiChu || null)
       .input("ChiNhanhLap", mssql.VarChar, branch)
+      .input("MaNCC", mssql.VarChar, data.maNCC || null)
       .input("ItemsJson", mssql.NVarChar, itemsJson)
       .execute("dbo.usp_Local_TaoPhieuNhapNhieuDong");
 

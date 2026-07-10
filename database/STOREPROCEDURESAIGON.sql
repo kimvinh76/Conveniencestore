@@ -870,17 +870,33 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT MaPN, NgayNhap, ChiNhanh, TongTien, GhiChu
-    FROM dbo.PhieuNhap
-    WHERE ChiNhanh = 'SAIGON'
-    ORDER BY NgayNhap DESC, MaPN DESC;
+    SELECT pn.MaPN, pn.NgayNhap, pn.ChiNhanh, pn.TongTien, pn.GhiChu, pn.MaNCC, ncc.TenNCC
+    FROM dbo.PhieuNhap pn
+    LEFT JOIN dbo.NhaCungCap ncc ON pn.MaNCC = ncc.MaNCC
+    WHERE pn.ChiNhanh = 'SAIGON'
+    ORDER BY pn.NgayNhap DESC, pn.MaPN DESC;
 END;
 GO
+CREATE OR ALTER PROCEDURE dbo.usp_Local_DanhSachChiTietPhieuNhap
+    @MaPN VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    SELECT ctpn.MaPN, ctpn.MaSP, hh.TenHang, ctpn.SoLuong, ctpn.DonGiaNhap,
+           CAST(ctpn.SoLuong * ctpn.DonGiaNhap AS DECIMAL(18,2)) AS ThanhTienNhap
+    FROM dbo.ChiTietPhieuNhap ctpn
+    INNER JOIN dbo.PhieuNhap pn ON pn.MaPN = ctpn.MaPN AND pn.ChiNhanh = 'SAIGON'
+    LEFT JOIN dbo.HangHoa hh ON hh.MaSP = ctpn.MaSP
+    WHERE ctpn.MaPN = @MaPN
+    ORDER BY ctpn.MaSP;
+END;
+GO
 CREATE OR ALTER PROCEDURE dbo.usp_Local_TaoPhieuNhapNhieuDong
     @MaPN VARCHAR(50),
     @GhiChu NVARCHAR(255),
     @ChiNhanhLap VARCHAR(10),
+    @MaNCC VARCHAR(50),
     @ItemsJson NVARCHAR(MAX)
 AS
 BEGIN
@@ -892,6 +908,9 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM dbo.PhieuNhap WHERE MaPN = @MaPN)
         THROW 50001, N'Mã phiếu nhập đã tồn tại!', 1;
+
+    IF @MaNCC IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.NhaCungCap WHERE MaNCC = @MaNCC)
+        THROW 50005, N'Mã nhà cung cấp không tồn tại!', 1;
 
     DECLARE @Items TABLE (
         MaSP VARCHAR(50),
@@ -912,8 +931,8 @@ BEGIN
         BEGIN TRANSACTION;
 
         -- 1. Thêm phiếu nhập
-        INSERT INTO dbo.PhieuNhap (MaPN, ChiNhanh, GhiChu, TongTien)
-        VALUES (@MaPN, 'SAIGON', @GhiChu, 0);
+        INSERT INTO dbo.PhieuNhap (MaPN, ChiNhanh, GhiChu, TongTien, MaNCC)
+        VALUES (@MaPN, 'SAIGON', @GhiChu, 0, @MaNCC);
 
         -- 2. Thêm chi tiết phiếu nhập
         INSERT INTO dbo.ChiTietPhieuNhap (MaPN, MaSP, SoLuong, DonGiaNhap)

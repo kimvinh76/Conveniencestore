@@ -8,7 +8,9 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
   const [maPN, setMaPN] = useState("");
   const [ghiChu, setGhiChu] = useState("");
   const [items, setItems] = useState([]);
-  
+  const [maNCC, setMaNCC] = useState("");
+  const [suppliers, setSuppliers] = useState([]);
+
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +37,16 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
         setLoadingProducts(false);
       }
     };
+    const fetchSuppliers = async () => {
+      try {
+        const data = await apiFetch("/api/suppliers");
+        setSuppliers(data);
+      } catch (error) {
+        console.error("Không thể tải nhà cung cấp", error);
+      }
+    };
     fetchProducts();
+    fetchSuppliers();
   }, []);
 
   const handleAddItem = (e) => {
@@ -54,7 +65,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
     }
 
     const product = products.find(p => (p.productCode || p.MaSP) === selectedSP);
-    
+
     // Check if already in list
     const existingIndex = items.findIndex(i => i.MaSP === selectedSP);
     if (existingIndex >= 0) {
@@ -101,6 +112,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
       const payload = {
         maPN: maPN.trim(),
         ghiChu: ghiChu.trim(),
+        maNCC: maNCC || null,
         items: items.map(i => ({
           MaSP: i.MaSP,
           SoLuong: i.SoLuong,
@@ -143,7 +155,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
         </div>
 
         <div className="p-6 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Mã Phiếu Nhập</label>
               <input
@@ -153,6 +165,19 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="VD: PN001"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Nhà Cung Cấp</label>
+              <select
+                value={maNCC}
+                onChange={(e) => setMaNCC(e.target.value)}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value=""> Chọn nhà cung cấp</option>
+                {suppliers.filter(s => s.TrangThai !== 0).map(s => (
+                  <option key={s.MaNCC} value={s.MaNCC}>{s.TenNCC}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Ghi Chú</label>

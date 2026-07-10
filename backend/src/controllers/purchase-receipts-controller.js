@@ -36,7 +36,7 @@ class PurchaseReceiptController {
   async createReceipt(req, res) {
     try {
       const branch = req.body.branch || req.auth.branch || req.auth.chiNhanh;
-      const { maPN, ghiChu, items } = req.body;
+      const { maPN, ghiChu, maNCC, items } = req.body;
 
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
@@ -45,7 +45,9 @@ class PurchaseReceiptController {
         return res.status(400).json({ message: "Dữ liệu phiếu nhập không hợp lệ" });
       }
 
-      const result = await service.createReceipt(branch, { maPN, ghiChu, items });
+
+      const result = await service.createReceipt(branch, { maPN, ghiChu, maNCC, items });
+
       return res.status(201).json(result);
     } catch (error) {
       console.error("[PurchaseReceiptsController.createReceipt] Error:", error);

@@ -58,15 +58,16 @@ export default function CentralPurchaseReceiptsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {selectedReceipt ? (
           <PurchaseReceiptDetails 
-            receiptId={selectedReceipt} 
+            receiptId={selectedReceipt.MaPN} 
             branch={branch}
+            supplierName={selectedReceipt.TenNCC || selectedReceipt.MaNCC}
             onBack={() => setSelectedReceipt(null)} 
           />
         ) : (
           <PurchaseReceiptsList 
             receipts={receipts} 
             loading={loading} 
-            onViewDetails={(id) => setSelectedReceipt(id)} 
+            onViewDetails={(id) => setSelectedReceipt(receipts.find(r => r.MaPN === id))} 
           />
         )}
       </div>
