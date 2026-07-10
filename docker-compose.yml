@@ -1,0 +1,73 @@
+services:
+  # 1. SQL Server Database (Central + 3 Branches)
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ddbms_sqlserver
+    ports:
+      - "14333:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong(!)Password123
+    volumes:
+      # Mount thư mục chứa file SQL để script đọc
+      - ./database:/usr/config
+      # Mount script khởi tạo
+      - ./docker-db-init:/usr/config/init
+    # Chạy script khởi tạo nền và bắt đầu sql server
+    entrypoint: >
+      bash -c "chmod +x /usr/config/init/init-db.sh && /usr/config/init/init-db.sh & /opt/mssql/bin/sqlservr"
+
+  # 2. Node.js Backend
+  backend:
+    build: ./backend
+    container_name: ddbms_backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=your_jwt_secret_key_here
+      - JWT_EXPIRES_IN=8h
+      - AUTH_COOKIE_NAME=ddbm_auth
+      - FRONTEND_ORIGIN=http://localhost:3000
+
+      # CENTRAL DB
+      - CENTRAL_DB_HOST=database
+      - CENTRAL_DB_PORT=1433
+      - CENTRAL_DB_USER=sa
+      - CENTRAL_DB_PASSWORD=YourStrong(!)Password123
+      - CENTRAL_DB_NAME=CentralDB
+
+      # HANOI DB
+      - HANOI_DB_HOST=database
+      - HANOI_DB_PORT=1433
+      - HANOI_DB_USER=sa
+      - HANOI_DB_PASSWORD=YourStrong(!)Password123
+      - HANOI_DB_NAME=Store_HN
+
+      # HUE DB
+      - HUE_DB_HOST=database
+      - HUE_DB_PORT=1433
+      - HUE_DB_USER=sa
+      - HUE_DB_PASSWORD=YourStrong(!)Password123
+      - HUE_DB_NAME=Store_H
+
+      # SAIGON DB
+      - SAIGON_DB_HOST=database
+      - SAIGON_DB_PORT=1433
+      - SAIGON_DB_USER=sa
+      - SAIGON_DB_PASSWORD=YourStrong(!)Password123
+      - SAIGON_DB_NAME=Store_SG
+
+    depends_on:
+      - database
+
+  # 3. Next.js Frontend
+  frontend:
+    build: ./frontend
+    container_name: ddbms_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:3001
+    depends_on:
+      - backend
