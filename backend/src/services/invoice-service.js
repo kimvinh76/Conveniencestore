@@ -1,5 +1,4 @@
-const { sql, isMockMode, getPool } = require("../db/sqlserver");
-const mock = require("../data/mock-store");
+const { sql, getPool } = require("../db/sqlserver");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachHoaDon",
@@ -18,18 +17,16 @@ const formatDate = (dateVal) => {
 };
 
 async function listInvoicesByBranch(branch) {
-  if (isMockMode()) {
-    const rows = mock.listInvoicesByBranch(branch);
-    return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
-  }
+
+
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   const rows = result.recordset || [];
   return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
 }
 
+
 async function getInvoiceDetails(branch, invoiceId) {
-  if (isMockMode()) return mock.getInvoiceDetailsLocal(branch, invoiceId);
   const pool = await getPool(branch);
   const result = await pool.request()
     .input("MaHD", sql.VarChar(50), invoiceId)
@@ -38,7 +35,6 @@ async function getInvoiceDetails(branch, invoiceId) {
 }
 
 async function createInvoice(payload) {
-  if (isMockMode()) return mock.createInvoiceLocal(payload);
   const { branch, employeeId, items, note } = payload;
   const pool = await getPool(branch);
   const maHD = `HD_${Date.now()}`;

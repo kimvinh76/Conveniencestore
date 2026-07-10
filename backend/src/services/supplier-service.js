@@ -1,14 +1,13 @@
 const { getPool } = require("../db/sqlserver");
 const mssql = require("mssql");
 
-class SupplierService {
-  async listSuppliers(branch) {
+async function listSuppliers(branch) {
     const pool = await getPool(branch);
     const result = await pool.request().query("SELECT MaNCC, TenNCC, DienThoai, DiaChi, Email, TrangThai FROM dbo.NhaCungCap ORDER BY TenNCC");
     return result.recordset;
   }
 
-  async getSupplier(branch, id) {
+async function getSupplier(branch, id) {
     const pool = await getPool(branch);
     const result = await pool
       .request()
@@ -17,7 +16,7 @@ class SupplierService {
     return result.recordset[0] || null;
   }
 
-  async createSupplier(branch, data) {
+async function createSupplier(branch, data) {
     const pool = await getPool(branch);
     
     // Check if supplier already exists (even if soft-deleted)
@@ -54,7 +53,7 @@ class SupplierService {
     return { message: "Tạo nhà cung cấp thành công" };
   }
 
-  async updateSupplier(branch, id, data) {
+async function updateSupplier(branch, id, data) {
     const pool = await getPool(branch);
     const result = await pool
       .request()
@@ -71,7 +70,7 @@ class SupplierService {
     return { message: "Cập nhật nhà cung cấp thành công" };
   }
 
-  async deleteSupplier(branch, id) {
+async function deleteSupplier(branch, id) {
     const pool = await getPool(branch);
     
     // Set TrangThai to 0 (Soft delete)
@@ -84,7 +83,12 @@ class SupplierService {
       throw new Error("Không tìm thấy nhà cung cấp để ngừng hoạt động");
     }
     return { message: "Ngừng hoạt động nhà cung cấp thành công" };
-  }
 }
 
-module.exports = new SupplierService();
+module.exports = {
+  listSuppliers,
+  getSupplier,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier
+};

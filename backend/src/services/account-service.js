@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { sql, isMockMode, getPool } = require("../db/sqlserver");
+const { sql, getPool } = require("../db/sqlserver");
 
 // ========== SERVICE DÀNH CHO CENTRAL (ADMIN_TOAN_BO) ==========
 
@@ -7,7 +7,6 @@ const { sql, isMockMode, getPool } = require("../db/sqlserver");
  * Xem toàn bộ tài khoản từ CentralDB qua linked server.
  */
 async function listAllAccountsFromCentral() {
-  if (isMockMode()) return [];
   const pool = await getPool("CENTRAL");
   const result = await pool.request().execute("dbo.usp_Central_DanhSachTaiKhoanToanBo");
   return result.recordset;
@@ -18,7 +17,6 @@ async function listAllAccountsFromCentral() {
  * @param {Object} payload - { TenDangNhap, MatKhau, MaNV, Quyen, TrangThai }
  */
 async function createAccount(payload) {
-  if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(payload.MatKhau, salt);
@@ -38,7 +36,6 @@ async function createAccount(payload) {
  * Cập nhật tài khoản CENTRAL (quyền, trạng thái, mật khẩu)
  */
 async function updateAccount(username, payload, requestingUserAuth) {
-  if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
 
   const accountInfoResult = await pool.request()
@@ -120,7 +117,6 @@ async function updateAccount(username, payload, requestingUserAuth) {
  * Khóa tài khoản (cả CENTRAL và linked branches)
  */
 async function lockAccount(username, branch) {
-  if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
   await pool
     .request()
@@ -136,7 +132,6 @@ async function lockAccount(username, branch) {
  * Mở khóa tài khoản (cả CENTRAL và linked branches)
  */
 async function unlockAccount(username, branch) {
-  if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
   await pool
     .request()
@@ -154,7 +149,6 @@ async function unlockAccount(username, branch) {
  * Xem danh sách tài khoản của 1 chi nhánh (gọi xuống local DB)
  */
 async function listAccountsByBranch(branch) {
-  if (isMockMode()) return [];
   const pool = await getPool(branch);
   const result = await pool.request().execute("dbo.usp_Local_DanhSachTaiKhoan");
   return result.recordset;
@@ -169,7 +163,6 @@ async function listAccountsByBranch(branch) {
  * Khóa tài khoản ở chi nhánh (gọi local proc)
  */
 async function lockAccountLocal(username, branch) {
-  if (isMockMode()) return null;
   const pool = await getPool(branch);
   await pool
     .request()
@@ -189,7 +182,6 @@ async function lockAccountLocal(username, branch) {
  * Mở khóa tài khoản ở chi nhánh (gọi local proc)
  */
 async function unlockAccountLocal(username, branch) {
-  if (isMockMode()) return null;
   const pool = await getPool(branch);
   await pool
     .request()
@@ -212,7 +204,6 @@ async function unlockAccountLocal(username, branch) {
  * Tìm tài khoản này ở CENTRAL, cập nhật mật khẩu mới
  */
 async function changeOwnPassword(username, oldPassword, newPassword) {
-  if (isMockMode()) return null;
 
   // Xác thực mật khẩu cũ trước
   const { findAccountForLogin, hashPassword, verifyPassword } = require("./auth-service");
@@ -238,7 +229,6 @@ async function changeOwnPassword(username, oldPassword, newPassword) {
  * Cập nhật thông tin hồ sơ cá nhân (Dành cho nhân viên tự sửa)
  */
 async function updateOwnProfile(username, payload) {
-  if (isMockMode()) return null;
   const pool = await getPool("CENTRAL");
   
   // Lấy MaNV từ username trước

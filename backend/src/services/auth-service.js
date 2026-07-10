@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sql, isMockMode, getPool } = require("../db/sqlserver");
+const { sql, getPool } = require("../db/sqlserver");
 const { isCentralBranch } = require("../config/branches");
 const emailService = require("./email-service");
 
@@ -62,9 +62,8 @@ function canAccessBranch(record, loginBranch) {
 }
 
 async function findAccountInCentral(username) {
-  if (isMockMode()) {
-    return null;
-  }
+
+
 
   const pool = await getPool("CENTRAL");
   const result = await pool
@@ -95,7 +94,6 @@ async function findAccountForLogin(username) {
 }
 
 async function findAccountByEmail(email) {
-  if (isMockMode()) return null;
 
   const pool = await getPool("CENTRAL");
   const result = await pool

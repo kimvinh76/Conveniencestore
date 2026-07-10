@@ -1,14 +1,13 @@
 const { getPool } = require("../db/sqlserver");
 const mssql = require("mssql");
 
-class PurchaseReceiptService {
-  async getReceipts(branch) {
+async function getReceipts(branch) {
     const pool = await getPool(branch);
     const result = await pool.request().execute("dbo.usp_Local_DanhSachPhieuNhap");
     return result.recordset;
   }
 
-  async getReceiptDetails(branch, maPN) {
+async function getReceiptDetails(branch, maPN) {
     const pool = await getPool(branch);
     const result = await pool
       .request()
@@ -18,7 +17,7 @@ class PurchaseReceiptService {
   }
 
 
-  async createReceipt(branch, data) {
+async function createReceipt(branch, data) {
     const pool = await getPool(branch);
     // data.items must be an array of objects
     const itemsJson = JSON.stringify(data.items);
@@ -34,7 +33,10 @@ class PurchaseReceiptService {
       .execute("dbo.usp_Local_TaoPhieuNhapNhieuDong");
 
     return { message: "Tạo phiếu nhập thành công" };
-  }
 }
 
-module.exports = new PurchaseReceiptService();
+module.exports = {
+  getReceipts,
+  getReceiptDetails,
+  createReceipt
+};

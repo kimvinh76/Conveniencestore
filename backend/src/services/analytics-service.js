@@ -1,8 +1,6 @@
-const { sql, isMockMode, getPool } = require("../db/sqlserver");
-const mock = require("../data/mock-store");
+const { sql, getPool } = require("../db/sqlserver");
 
 async function getNationalRevenue(callerBranch) {
-  if (isMockMode()) return mock.revenueReport();
   const pool = await getPool(callerBranch === "CENTRAL" ? "CENTRAL" : callerBranch);
   
   let rows;
@@ -23,7 +21,6 @@ async function getNationalRevenue(callerBranch) {
 }
 
 async function getCentralAnalyticsOverview(callerBranch) {
-  if (isMockMode()) return mock.analyticsOverview();
   const pool = await getPool(callerBranch === "CENTRAL" ? "CENTRAL" : callerBranch);
   
   const [dailyRows, weeklyRows, topEmployeeRows, topProductRows, compareRows] = await Promise.all([
@@ -44,7 +41,6 @@ async function getCentralAnalyticsOverview(callerBranch) {
 }
 
 async function getBranchDashboard(branch) {
-  if (isMockMode()) return mock.branchDashboard(branch);
   const pool = await getPool(branch);
   const [summaryRs, revenueRs, topStockRs] = await Promise.all([
     pool.request().execute("dbo.usp_Local_DashboardTongQuan"),

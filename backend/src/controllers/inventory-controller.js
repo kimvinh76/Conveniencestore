@@ -3,7 +3,7 @@ const { normalizeBranch } = require("../config/branches");
 
 exports.listInventory = async (req, res) => {
   try {
-    console.log("listInventory called with req.query.branch:", req.query.branch);
+
     const branch = normalizeBranch(req.query.branch);
     if (!branch) {
       console.log("normalizeBranch returned null for:", req.query.branch);

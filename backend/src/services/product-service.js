@@ -1,5 +1,4 @@
-const { sql, isMockMode, getPool } = require("../db/sqlserver");
-const mock = require("../data/mock-store");
+const { sql, getPool } = require("../db/sqlserver");
 
 const PROCS = {
   list: "dbo.usp_Chung_DanhSachHangHoa",
@@ -10,15 +9,6 @@ const PROCS = {
 };
 
 async function listProducts(branch) {
-  if (isMockMode()) {
-    const list = mock.listProducts();
-    if (branch === "CENTRAL") return list;
-    const inv = mock.listInventory(branch);
-    return list.map(p => {
-      const stockItem = inv.find(i => i.productCode === p.productCode);
-      return { ...p, stock: stockItem ? stockItem.quantity : 0 };
-    });
-  }
   const pool = await getPool(branch);
   if (branch !== "CENTRAL") {
     const query = `
@@ -44,7 +34,6 @@ async function listProducts(branch) {
 }
 
 async function getProductByCode(branch, productCode) {
-  if (isMockMode()) return mock.getProductByCode(branch, productCode);
   const pool = await getPool(branch);
   const rs = await pool.request()
     .input("MaSP", sql.VarChar(50), productCode)
@@ -54,7 +43,6 @@ async function getProductByCode(branch, productCode) {
 }
 
 async function createProduct(payload) {
-  if (isMockMode()) return mock.createProduct(payload);
   const pool = await getPool("CENTRAL");
   const { productCode, productName, unitPrice, description, imageUrl, unit } = payload;
   await pool.request()
@@ -69,7 +57,6 @@ async function createProduct(payload) {
 }
 
 async function updateProduct(productCode, payload) {
-  if (isMockMode()) return mock.updateProduct(productCode, payload);
   const pool = await getPool("CENTRAL");
   await pool.request()
     .input("MaSP", sql.VarChar(50), productCode)
@@ -83,7 +70,6 @@ async function updateProduct(productCode, payload) {
 }
 
 async function deleteProduct(productCode) {
-  if (isMockMode()) return mock.deleteProduct(productCode);
   const pool = await getPool("CENTRAL");
   
   // Kiểm tra ràng buộc phân tán trước khi xóa tại Server Gốc
