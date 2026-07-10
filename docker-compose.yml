@@ -15,7 +15,7 @@ services:
       - ./docker-db-init:/usr/config/init
     # Chạy script khởi tạo nền và bắt đầu sql server
     entrypoint: >
-      bash -c "chmod +x /usr/config/init/init-db.sh && /usr/config/init/init-db.sh & /opt/mssql/bin/sqlservr"
+      bash -c "cp /usr/config/init/init-db.sh /tmp/init-db.sh && sed -i 's/\r$$//' /tmp/init-db.sh && bash /tmp/init-db.sh & /opt/mssql/bin/sqlservr"
 
   # 2. Node.js Backend
   backend:
