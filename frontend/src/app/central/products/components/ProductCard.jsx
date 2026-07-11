@@ -15,9 +15,15 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         ) : (
           <span className="text-5xl">🛍️</span>
         )}
-        
-        <span className="absolute top-3 left-3 text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded uppercase tracking-wider">
-          {product.productCode}
+        <span className="absolute top-3 left-3 flex gap-2">
+          <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+            {product.productCode}
+          </span>
+          {product.active === false && (
+            <span className="text-[10px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200 shadow-sm">
+              Ngừng bán
+            </span>
+          )}
         </span>
       </div>
 

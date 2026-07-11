@@ -37,7 +37,7 @@ export default function Page() {
     openDetailsModal();
     setDetailsTitle(row.MaHD);
     try {
-      const data = await apiFetch(`/api/invoices/${row.MaHD}?branch=${selectedBranch}`);
+      const data = await apiFetch(`/api/invoices/${row.MaHD}/details?branch=${selectedBranch}`);
       setDetails(data.data || []);
     } catch (err) {
       showNotification(err.message, "error");

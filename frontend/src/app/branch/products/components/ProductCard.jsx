@@ -29,9 +29,16 @@ export default function ProductCard({ product }) {
       {/* Product Details */}
       <div className="p-5 flex flex-col flex-1 gap-2">
         <div className="flex justify-between items-start gap-2">
-          <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded uppercase tracking-wider">
-            {product.productCode}
-          </span>
+          <div className="flex gap-2">
+            <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+              {product.productCode}
+            </span>
+            {product.active === false && (
+              <span className="text-[10px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200 shadow-sm">
+                Ngừng bán
+              </span>
+            )}
+          </div>
           <span className="text-xs font-semibold text-slate-400">Đơn vị: {product.unit || "Cái"}</span>
         </div>
 

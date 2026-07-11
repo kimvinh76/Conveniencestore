@@ -26,13 +26,10 @@ export default function Page() {
         productCode: row.productCode || row.MaSP,
         productName: row.productName || row.TenHang,
         unitPrice: row.unitPrice ?? row.Gia,
-
-
-
         imageUrl: row.imageUrl,
         description: row.description,
         unit: row.unit,
-
+        active: row.active ?? true,
       }));
       setRows(normalized);
     } catch (err) {
@@ -68,7 +65,7 @@ export default function Page() {
     try {
       await apiFetch(`/api/products/${productToDelete}?branch=CENTRAL`, { method: "DELETE" });
       closeDeleteModal();
-      showNotification(`Đã xóa sản phẩm ${productToDelete} thành công`);
+      showNotification(`Đã ngừng kinh doanh sản phẩm ${productToDelete}`);
       load();
     } catch (err) {
       showNotification(err.message, "error");
@@ -176,13 +173,13 @@ export default function Page() {
           <div className="fixed inset-0 bg-black/40" onClick={closeDeleteModal} />
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm z-10">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-red-50 text-red-600">
-              <h3 className="text-xl font-bold">Xác nhận xóa sản phẩm</h3>
+              <h3 className="text-xl font-bold">Xác nhận ngừng kinh doanh</h3>
               <button onClick={closeDeleteModal} className="text-red-400 hover:text-red-600 font-bold">✕</button>
             </div>
             <div className="p-6">
-              <p className="text-slate-700 mb-6 text-center">Bạn có chắc chắn muốn xóa sản phẩm <strong className="text-slate-900">{productToDelete}</strong>? Thao tác này sẽ xóa dữ liệu liên quan tại tất cả chi nhánh.</p>
+              <p className="text-slate-700 mb-6 text-center">Bạn có chắc chắn muốn ngừng kinh doanh sản phẩm <strong className="text-slate-900">{productToDelete}</strong>?<br/>Sản phẩm sẽ bị ẩn khỏi danh sách, nhưng vẫn giữ được lịch sử hóa đơn cũ.</p>
               <div className="flex gap-3">
-                <button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl flex-1 transition-all">Xóa ngay</button>
+                <button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl flex-1 transition-all">Ngừng bán ngay</button>
                 <button onClick={closeDeleteModal} className="btn-ghost border flex-1 font-bold">Hủy bỏ</button>
               </div>
             </div>

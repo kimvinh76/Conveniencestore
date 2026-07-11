@@ -19,7 +19,8 @@ async function listProducts(branch) {
         hh.MoTa AS description,
         hh.AnhSanPham AS imageUrl,
         hh.DonViTinh AS unit,
-        ISNULL(tk.SoLuongTon, 0) AS stock
+        ISNULL(tk.SoLuongTon, 0) AS stock,
+        CAST(hh.TrangThai AS BIT) AS active
       FROM dbo.HangHoa hh
       LEFT JOIN dbo.TonKho tk ON tk.MaSP = hh.MaSP AND tk.ChiNhanh = @Branch
       ORDER BY hh.MaSP;
@@ -39,7 +40,16 @@ async function getProductByCode(branch, productCode) {
     .input("MaSP", sql.VarChar(50), productCode)
     .execute(PROCS.byCode);
   const row = rs.recordset[0];
-  return row ? { branch, productCode: row.MaSP, productName: row.TenHang, unitPrice: Number(row.Gia || 0), description: row.MoTa, imageUrl: row.AnhSanPham, unit: row.DonViTinh } : null;
+  return row ? { 
+    branch, 
+    productCode: row.MaSP, 
+    productName: row.TenHang, 
+    unitPrice: Number(row.Gia || 0), 
+    description: row.MoTa, 
+    imageUrl: row.AnhSanPham, 
+    unit: row.DonViTinh,
+    active: row.TrangThai !== undefined ? Boolean(row.TrangThai) : true
+  } : null;
 }
 
 async function createProduct(payload) {
@@ -71,22 +81,8 @@ async function updateProduct(productCode, payload) {
 
 async function deleteProduct(productCode) {
   const pool = await getPool("CENTRAL");
-  
-  // Kiểm tra ràng buộc phân tán trước khi xóa tại Server Gốc
-  const branchTargets = [
-    { srv: "HUE_SERVER", db: "Store_H" },
-    { srv: "SG_SERVER", db: "Store_SG" },
-    { srv: "HN_SERVER", db: "Store_HN" }
-  ];
-
-  for (const t of branchTargets) {
-    const check = await pool.request().input("MaSP", sql.VarChar(50), productCode)
-      .query(`SELECT 1 FROM [${t.srv}].[${t.db}].dbo.ChiTietHoaDon WHERE MaSP = @MaSP`);
-    if (check.recordset.length > 0) throw new Error(`Sản phẩm đã có hóa đơn tại server ${t.srv}`);
-  }
-
   await pool.request().input("MaSP", sql.VarChar(50), productCode).execute(PROCS.delete);
-  return { productCode, deleted: true };
+  return { productCode, deleted: true, message: "Sản phẩm đã được ngừng kinh doanh (Soft Delete)" };
 }
 
 module.exports = { listProducts, getProductByCode, createProduct, updateProduct, deleteProduct };

@@ -25,6 +25,7 @@ export default function Page() {
   const { isOpen: isDetailsOpen, open: openDetailsModal, close: closeDetailsModal } = useModal();
   const [searchInvoice, setSearchInvoice] = useState("");
   const [note, setNote] = useState("");
+  const [checkoutError, setCheckoutError] = useState(null);
 
   const totalAmount = useMemo(() =>
     cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0),
@@ -98,8 +99,8 @@ export default function Page() {
     event.preventDefault();
     if (!branch) return;
 
-    if (!auth?.employeeId) return alert("Không xác định được nhân viên thu ngân (Lỗi phiên đăng nhập).");
-    if (cartItems.length === 0) return alert("Giỏ hàng đang trống!");
+    if (!auth?.employeeId) return setCheckoutError("Không xác định được nhân viên thu ngân (Lỗi phiên đăng nhập).");
+    if (cartItems.length === 0) return setCheckoutError("Giỏ hàng đang trống!");
 
     const cleanedItems = cartItems.map((item) => ({
       productCode: String(item.productCode || "").trim(),
@@ -123,7 +124,7 @@ export default function Page() {
       loadInitialData(); // Load lại lịch sử
       setActiveTab("history"); // Tự động nhảy sang tab lịch sử để xem bill vừa tạo
     } catch (err) {
-      alert(`Lỗi: ${err.message || "Không thể tạo hóa đơn"}`);
+      setCheckoutError(err.message || "Không thể tạo hóa đơn");
     }
   };
 
@@ -209,6 +210,29 @@ export default function Page() {
         details={details}
         onClose={closeDetailsModal}
       />
+
+      {checkoutError && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setCheckoutError(null)} />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm z-10 overflow-hidden transform transition-all">
+            <div className="bg-rose-50 p-6 flex flex-col items-center justify-center border-b border-rose-100">
+              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl"><XIcon /></span>
+              </div>
+              <h3 className="text-xl font-black text-rose-600 text-center">Tạo hóa đơn thất bại</h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-slate-600 font-medium">{checkoutError}</p>
+              <button
+                onClick={() => setCheckoutError(null)}
+                className="mt-6 w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

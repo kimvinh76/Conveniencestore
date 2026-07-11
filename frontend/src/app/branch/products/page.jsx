@@ -25,6 +25,7 @@ export default function Page() {
         description: row.description,
         imageUrl: row.imageUrl,
         unit: row.unit,
+        active: row.active ?? true,
       }));
       setRows(normalized);
     } catch (err) {
