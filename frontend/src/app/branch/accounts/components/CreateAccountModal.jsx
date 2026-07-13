@@ -75,10 +75,7 @@ export default function CreateAccountModal({ form, setForm, onSubmit, onClose, a
             )}
           </label>
 
-          {/* Ghi chú quyền */}
-          <div className="bg-amber-50 border border-amber-200 text-amber-700 p-3 rounded-lg text-sm">
-            Tài khoản sẽ được tạo với quyền <strong>NHAN_VIEN</strong>.
-          </div>
+
 
           {/* Buttons */}
           <div className="flex gap-3 mt-2">
