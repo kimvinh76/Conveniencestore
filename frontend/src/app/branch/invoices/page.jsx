@@ -23,6 +23,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const showNotification = useToast();
   const { isOpen: isDetailsOpen, open: openDetailsModal, close: closeDetailsModal } = useModal();
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchInvoice, setSearchInvoice] = useState("");
   const [note, setNote] = useState("");
   const [checkoutError, setCheckoutError] = useState(null);
@@ -111,7 +112,14 @@ export default function Page() {
     }));
 
     try {
-      const payload = { branch, employeeId: auth.employeeId, items: cleanedItems, totalAmount, note };
+      const payload = { 
+        branch, 
+        employeeId: auth.employeeId, 
+        customerId: selectedCustomer?.customerId || null,
+        items: cleanedItems, 
+        totalAmount, 
+        note 
+      };
       await apiFetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,6 +129,7 @@ export default function Page() {
       showNotification("Tạo hóa đơn thành công!", "success");
       setCartItems([]);
       setNote("");
+      setSelectedCustomer(null);
       loadInitialData(); // Load lại lịch sử
       setActiveTab("history"); // Tự động nhảy sang tab lịch sử để xem bill vừa tạo
     } catch (err) {
@@ -132,8 +141,17 @@ export default function Page() {
     if (!row?.MaHD || !branch) return;
     try {
       const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=${branch}`);
-      setDetails(Array.isArray(data.data) ? data.data : data);
-      setDetailsTitle(row.MaHD);
+      const rawDetails = Array.isArray(data.data) ? data.data : data;
+      const formattedDetails = rawDetails.map(d => ({
+        "Mã HĐ": d.MaHD,
+        "Sản phẩm": `${d.TenHang} (${d.MaSP})`,
+        "Số lượng": d.SoLuong,
+        "Đơn giá": new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(d.DonGia),
+        "Thành tiền": new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(d.ThanhTien)
+      }));
+      setDetails(formattedDetails);
+      const customerName = rawDetails.length > 0 && rawDetails[0].HoTenKhachHang ? rawDetails[0].HoTenKhachHang : "Khách vãng lai";
+      setDetailsTitle(`${row.MaHD} - ${customerName}`);
       openDetailsModal();
     } catch (err) {
       showNotification(err.message, "error");
@@ -184,6 +202,7 @@ export default function Page() {
               addToCart={addToCart}
             />
             <CartView
+              branch={branch}
               cartItems={cartItems}
               updateCartQuantity={updateCartQuantity}
               note={note}
@@ -191,6 +210,8 @@ export default function Page() {
               totalAmount={totalAmount}
               handleCheckout={handleCheckout}
               cashierName={cashierName}
+              selectedCustomer={selectedCustomer}
+              setSelectedCustomer={setSelectedCustomer}
             />
           </div>
         ) : (
@@ -217,7 +238,9 @@ export default function Page() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm z-10 overflow-hidden transform transition-all">
             <div className="bg-rose-50 p-6 flex flex-col items-center justify-center border-b border-rose-100">
               <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-3xl"><XIcon /></span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8 text-rose-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </div>
               <h3 className="text-xl font-black text-rose-600 text-center">Tạo hóa đơn thất bại</h3>
             </div>

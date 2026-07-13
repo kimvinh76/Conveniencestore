@@ -1,14 +1,18 @@
 "use client";
 import React from "react";
+import CustomerSelector from "./CustomerSelector";
 
 export default function CartView({ 
+  branch,
   cartItems, 
   updateCartQuantity, 
   note, 
   setNote, 
   totalAmount, 
   handleCheckout, 
-  cashierName 
+  cashierName,
+  selectedCustomer,
+  setSelectedCustomer
 }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-250px)]">
@@ -55,6 +59,12 @@ export default function CartView({
       </div>
 
       <div className="mt-4 pt-4 border-t-2 border-dashed border-slate-200">
+        <CustomerSelector 
+          branch={branch}
+          selectedCustomer={selectedCustomer}
+          onSelectCustomer={setSelectedCustomer}
+        />
+
         <input 
           value={note} 
           onChange={e => setNote(e.target.value)} 

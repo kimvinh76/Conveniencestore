@@ -35,7 +35,7 @@ async function getInvoiceDetails(branch, invoiceId) {
 }
 
 async function createInvoice(payload) {
-  const { branch, employeeId, items, note } = payload;
+  const { branch, employeeId, customerId, items, note } = payload;
   const pool = await getPool(branch);
   const maHD = `HD_${Date.now()}`;
 
@@ -49,12 +49,13 @@ async function createInvoice(payload) {
   await pool.request()
     .input("MaHD", sql.VarChar(50), maHD)
     .input("MaNV", sql.VarChar(50), employeeId)
+    .input("MaKH", sql.VarChar(50), customerId || null)
     .input("GhiChu", sql.NVarChar(255), note)
     .input("ChiNhanhLap", sql.VarChar(10), branch)
     .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(itemsPayload))
     .execute(PROCS.create);
 
-  return { maHD, branch, totalAmount: payload.totalAmount };
+  return { maHD, branch, customerId, totalAmount: payload.totalAmount };
 }
 
 module.exports = { listInvoicesByBranch, getInvoiceDetails, createInvoice };
