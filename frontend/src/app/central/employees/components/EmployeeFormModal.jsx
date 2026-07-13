@@ -20,15 +20,26 @@ const EmployeeFormModal = function EmployeeFormModal({ form, setForm, isEditing,
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold text-slate-700">Chức vụ</span>
-            <input value={form.ChucVu} onChange={(e) => setForm({ ...form, ChucVu: e.target.value })} required className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <select
+              value={form.ChucVu || ''}
+              onChange={(e) => setForm({ ...form, ChucVu: e.target.value })}
+              required
+              className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="" disabled>Chọn chức vụ</option>
+
+              <option value="Quản lý chi nhánh">Quản lý chi nhánh</option>
+              <option value="Nhân viên bán hàng">Nhân viên bán hàng</option>
+              <option value="Nhân viên kho">Nhân viên kho</option>
+            </select>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold text-slate-700">Email</span>
             <input type="email" value={form.Email || ''} onChange={(e) => setForm({ ...form, Email: e.target.value })} className="px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </label>
           <div className="flex gap-3 mt-4">
-              <button type="submit" className="btn-primary flex-1">{isEditing ? "Lưu thay đổi" : "Thêm nhân viên"}</button>
-              <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={onClose}>Hủy</button>
+            <button type="submit" className="btn-primary flex-1">{isEditing ? "Lưu thay đổi" : "Thêm nhân viên"}</button>
+            <button type="button" className="btn-ghost flex-1 border border-slate-200" onClick={onClose}>Hủy</button>
           </div>
         </form>
       </div>

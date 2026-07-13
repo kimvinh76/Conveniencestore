@@ -19,22 +19,34 @@ export default function BranchLayout({ children }) {
     );
   }
 
-  const navItems = auth?.role === "NHAN_VIEN"
-    ? [
-        { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
-        { id: "products", href: "/branch/products", label: "Sản phẩm" },
-        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
-      ]
-    : [
-        { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
-        { id: "employees", href: "/branch/employees", label: "Nhân viên" },
-        { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
-        { id: "products", href: "/branch/products", label: "Sản phẩm" },
-        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+  let navItems = [];
+  if (auth?.role === "ADMIN_CHI_NHANH") {
+    navItems = [
+      { id: "dashboard", href: "/branch/dashboard", label: "Dashboard" },
+      { id: "employees", href: "/branch/employees", label: "Nhân viên" },
+      { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
+      { id: "products", href: "/branch/products", label: "Sản phẩm" },
+      { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+      { id: "purchase-receipts", href: "/branch/purchase-receipts", label: "Nhập hàng" },
+      { id: "suppliers", href: "/branch/suppliers", label: "Nhà cung cấp" },
+      { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
+    ];
+  } else if (auth?.role === "NHAN_VIEN") {
+    if (auth?.title === "Nhân viên kho" || auth?.title === "Thủ kho") {
+      navItems = [
         { id: "purchase-receipts", href: "/branch/purchase-receipts", label: "Nhập hàng" },
-        { id: "suppliers", href: "/branch/suppliers", label: "Nhà cung cấp" },
-        { id: "accounts", href: "/branch/accounts", label: "Tài khoản" },
+        { id: "products", href: "/branch/products", label: "Sản phẩm" },
+        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
       ];
+    } else {
+      // Default / Nhân viên bán hàng
+      navItems = [
+        { id: "invoices", href: "/branch/invoices", label: "Hóa đơn" },
+        { id: "products", href: "/branch/products", label: "Sản phẩm" },
+        { id: "inventory", href: "/branch/inventory", label: "Tồn kho" },
+      ];
+    }
+  }
 
   const activeItem = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const active = activeItem ? activeItem.id : "dashboard";

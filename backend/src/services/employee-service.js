@@ -31,9 +31,9 @@ async function updateEmployee(branchCode, maNV, payload) {
   const rs = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
-    .input("HoTen", sql.NVarChar(120), payload.HoTen || null)
-    .input("ChucVu", sql.NVarChar(80), payload.ChucVu || null)
-    .input("Email", sql.VarChar(100), payload.Email || null)
+    .input("HoTen", sql.NVarChar(120), payload.HoTen !== undefined ? payload.HoTen : null)
+    .input("ChucVu", sql.NVarChar(80), payload.ChucVu !== undefined ? payload.ChucVu : null)
+    .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
     .execute(PROCS.update);
   return rs.recordset[0];
@@ -45,9 +45,9 @@ async function deleteEmployee(branchCode, maNV) {
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
     .query("SELECT TOP 1 * FROM NhanVien WHERE MaNV = @MaNV;");
-  
+
   if (!beforeDelete.recordset.length) throw new Error("Employee not found");
-  
+
   await pool.request()
     .input("MaNV", sql.VarChar(50), maNV)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
