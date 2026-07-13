@@ -28,11 +28,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Forgot password modal state
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -62,22 +57,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = async (e) => {
+  const handleForgotPassword = (e) => {
     e.preventDefault();
-    setForgotLoading(true);
-    try {
-      const res = await apiFetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      showNotification(res.message || "Yêu cầu đã được gửi. Vui lòng kiểm tra email.", "success");
-      setForgotOpen(false);
-    } catch (err) {
-      showNotification(err.message || "Yêu cầu thất bại", "error");
-    } finally {
-      setForgotLoading(false);
-    }
+    alert("Vui lòng liên hệ với Quản lý chi nhánh hoặc Quản trị viên hệ thống để được cấp lại mật khẩu (Mật khẩu mặc định: 123456aA@).");
   };
 
   if (!ready) {
@@ -102,26 +84,13 @@ export default function LoginPage() {
             {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
             <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Tên đăng nhập</span><input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
             <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
-            <div className="flex justify-end"><button type="button" onClick={() => setForgotOpen(true)} className="text-sm font-semibold text-cyan-600 hover:underline">Quên mật khẩu?</button></div>
+            <div className="flex justify-end"><button type="button" onClick={handleForgotPassword} className="text-sm font-semibold text-cyan-600 hover:underline">Quên mật khẩu?</button></div>
             <button type="submit" disabled={loading} className="w-full rounded-xl px-4 py-3 font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50">{loading ? "Đang xử lý..." : "Đăng nhập"}</button>
           </form>
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
-      {forgotOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Quên mật khẩu</h3>
-            <p className="text-sm text-slate-500 mb-6">Nhập địa chỉ email của bạn. Một liên kết để đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.</p>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Địa chỉ Email</span><input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
-              <button type="submit" disabled={forgotLoading} className="w-full rounded-xl px-4 py-3 font-bold text-white bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50">{forgotLoading ? "Đang gửi..." : "Gửi liên kết đặt lại"}</button>
-              <button type="button" onClick={() => setForgotOpen(false)} className="w-full rounded-xl px-4 py-3 font-bold text-slate-700 border border-slate-200 hover:bg-slate-50">Hủy</button>
-            </form>
-          </div>
-        </div>
-      )}
+
     </main>
   );
 }

@@ -10,8 +10,8 @@ export default function CentralAccountTable({
   filteredAccounts,
   searchTerm,
   setSearchTerm,
-  onEdit,
   onLockToggle,
+  onResetPassword,
 }) {
   const roleBadge = (role) => {
     const map = {
@@ -83,23 +83,21 @@ export default function CentralAccountTable({
                   {acc.Quyen !== "ADMIN_TOAN_BO" ? (
                     <>
                       <button
-                        onClick={() => onEdit(acc)}
-                        className="text-sm font-semibold text-blue-600 hover:text-blue-800 mr-3"
+                        onClick={() => onResetPassword(acc)}
+                        className="text-sm font-semibold px-2 py-1 mr-2 rounded-lg transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
                       >
-                        Sửa
+                        Cấp lại MK
                       </button>
-                      {acc.Quyen === "NHAN_VIEN" && (
-                        <button
-                          onClick={() => onLockToggle(acc)}
-                          className={`text-sm font-semibold px-2 py-1 rounded-lg transition-colors ${
-                            Number(acc.TrangThai) === 1
-                              ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
-                              : "bg-green-50 text-green-600 hover:bg-green-100"
-                          }`}
-                        >
-                          {Number(acc.TrangThai) === 1 ? "Khóa" : "Mở khóa"}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => onLockToggle(acc)}
+                        className={`text-sm font-semibold px-2 py-1 rounded-lg transition-colors ${
+                          Number(acc.TrangThai) === 1
+                            ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                            : "bg-green-50 text-green-600 hover:bg-green-100"
+                        }`}
+                      >
+                        {Number(acc.TrangThai) === 1 ? "Khóa" : "Mở khóa"}
+                      </button>
                     </>
                   ) : (
                     <span className="text-xs text-slate-400 italic font-medium">Bảo vệ bảo mật</span>

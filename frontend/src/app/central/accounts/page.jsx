@@ -14,7 +14,6 @@ export default function Page() {
 
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
@@ -46,29 +45,19 @@ export default function Page() {
   }, []);
 
   const openAddModal = () => {
-    setIsEditing(false);
     setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", Quyen: "NHAN_VIEN", TrangThai: 1 });
     openFormModal();
   };
 
-  const handleEdit = (acc) => {
-    setIsEditing(true);
-    // Gán đúng MaNV từ row tài khoản → dropdown sẽ hiển thị tên nhân viên đúng
-    setForm({ TenDangNhap: acc.TenDangNhap, MatKhau: "", MaNV: acc.MaNV, Quyen: acc.Quyen, TrangThai: acc.TrangThai });
-    openFormModal();
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const method = isEditing ? "PUT" : "POST";
-      const url = isEditing ? `/api/accounts/central/${form.TenDangNhap}` : "/api/accounts/central";
-      // Khi edit chỉ gửi Quyen (không gửi MaNV/MatKhau)
-      const payload = isEditing ? { Quyen: form.Quyen } : form;
-      await apiFetch(url, {
-        method,
+      await apiFetch("/api/accounts/central", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
       closeFormModal();
       loadAccounts();
@@ -92,17 +81,30 @@ export default function Page() {
     }
   };
 
+  const handleResetPassword = async (acc) => {
+    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định (123456aA@) không?`)) {
+      return;
+    }
+    
+    try {
+      await apiFetch(`/api/accounts/central/${acc.TenDangNhap}/reset-password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch: acc.ChiNhanh || "CENTRAL" }),
+      });
+      alert(`Đã đặt lại mật khẩu thành công cho ${acc.TenDangNhap}. Mật khẩu mới là: 123456aA@`);
+    } catch (err) {
+      alert(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`);
+    }
+  };
+
   // ───────────── Derived state ─────────────
   /**
    * Khi Tạo mới: chỉ nhân viên chưa có tài khoản
-   * Khi Edit:    chỉ 1 nhân viên = chính nhân viên của acc đó (disabled select, chỉ xem)
    */
   const availableEmployees = useMemo(() => {
-    if (isEditing) {
-      return employees.filter((emp) => emp.MaNV === form.MaNV);
-    }
     return employees.filter((emp) => !accounts.some((acc) => acc.MaNV === emp.MaNV));
-  }, [isEditing, employees, accounts, form.MaNV]);
+  }, [employees, accounts]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm.trim()) return accounts;
@@ -143,8 +145,8 @@ export default function Page() {
           filteredAccounts={filteredAccounts}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          onEdit={handleEdit}
           onLockToggle={handleLockToggle}
+          onResetPassword={handleResetPassword}
         />
       </div>
 
@@ -152,10 +154,9 @@ export default function Page() {
 
 
 
-      {/* Modal Tạo mới / Cập nhật tài khoản */}
+      {/* Modal Tạo mới tài khoản */}
       {isFormOpen && (
         <AccountFormModal
-          isEditing={isEditing}
           form={form}
           setForm={setForm}
           onSubmit={handleSubmit}

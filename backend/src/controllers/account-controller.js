@@ -1,4 +1,5 @@
 const accountService = require("../services/account-service");
+const { getPool, sql } = require("../db/sqlserver");
 const { requireRole } = require("../middleware/auth");
 
 // ========== CENTRAL APIs (ADMIN_TOAN_BO) ==========
@@ -14,15 +15,26 @@ exports.listAllAccounts = async (_req, res) => {
 
 exports.createAccount = async (req, res) => {
   try {
-    const { TenDangNhap, MatKhau, MaNV, Quyen, TrangThai } = req.body;
+    const { TenDangNhap, MatKhau, MaNV, TrangThai } = req.body;
 
-    if (!TenDangNhap || !MatKhau || !MaNV || !Quyen) {
-      return res.status(400).json({ message: "TenDangNhap, MatKhau, MaNV, Quyen are required" });
+    if (!TenDangNhap || !MatKhau || !MaNV) {
+      return res.status(400).json({ message: "TenDangNhap, MatKhau, MaNV are required" });
     }
 
-    // ADMIN_TOAN_BO được quyền tạo bất kỳ quyền nào
-    const data = await accountService.createAccount({ TenDangNhap, MatKhau, MaNV, Quyen, TrangThai });
-    res.status(201).json({ message: "Account created", data });
+    // Lấy chức vụ từ DB Central để tự động gán Quyền
+    const pool = await getPool("CENTRAL");
+    const empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu FROM dbo.NhanVien WHERE MaNV = @MaNV");
+
+    let assignedRole = "NHAN_VIEN";
+    if (empResult.recordset.length > 0) {
+      const title = empResult.recordset[0].ChucVu;
+      if (title === "Quản trị hệ thống") assignedRole = "ADMIN_TOAN_BO";
+      if (title === "Quản lý chi nhánh") assignedRole = "ADMIN_CHI_NHANH";
+    }
+
+    // ADMIN_TOAN_BO được quyền tạo bất kỳ quyền nào, hệ thống tự ánh xạ
+    const data = await accountService.createAccount({ TenDangNhap, MatKhau, MaNV, Quyen: assignedRole, TrangThai });
+    res.status(201).json({ message: `Account created with auto-mapped role ${assignedRole}`, data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -31,10 +43,12 @@ exports.createAccount = async (req, res) => {
 exports.updateAccount = [requireRole("ADMIN_TOAN_BO"), async (req, res) => {
   try {
     const { username } = req.params;
-    const { Quyen, TrangThai } = req.body;
+    const { TrangThai } = req.body;
 
-    const data = await accountService.updateAccount(username, { Quyen, TrangThai }, req.auth);
-    res.json({ message: "Account updated", data });
+    // Chú ý: Backend hiện tại KHÔNG cho phép sửa Quyền bằng API này nữa.
+    // Quyền được đồng bộ hoàn toàn tự động từ Chức vụ (qua DB Trigger / SP).
+    const data = await accountService.updateAccount(username, { TrangThai }, req.auth);
+    res.json({ message: "Account status updated", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -69,10 +83,13 @@ exports.unlockAccount = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { username } = req.params;
-    const { newPassword, branch } = req.body;
-    if (!newPassword || !branch) {
-      return res.status(400).json({ message: "newPassword and branch are required" });
+    const { branch } = req.body;
+    if (!branch) {
+      return res.status(400).json({ message: "branch is required" });
     }
+
+    // Force default password
+    const newPassword = "123456aA@";
 
     const data = await accountService.resetPassword(username, newPassword, branch);
     res.json({ message: "Password reset successfully", data });
@@ -81,15 +98,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-exports.deleteAccount = async (req, res) => {
-  try {
-    const { username } = req.params;
-    const data = await accountService.deleteAccount(username);
-    res.json({ message: "Account deleted", data });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 // ========== BRANCH APIs (ADMIN_CHI_NHANH) ==========
 
@@ -112,16 +120,29 @@ exports.createBranchAccount = async (req, res) => {
       return res.status(400).json({ message: "TenDangNhap, MatKhau, MaNV, ChiNhanh are required" });
     }
 
-    // Ép quyền thành NHAN_VIEN - Admin chi nhánh không được tự nâng quyền
+    // Lấy chức vụ của nhân viên từ CSDL để tự động gán quyền
+    const pool = await getPool(ChiNhanh);
+    const empResult = await pool.request()
+      .input("MaNV", sql.VarChar(50), MaNV)
+      .query("SELECT ChucVu FROM dbo.NhanVien WHERE MaNV = @MaNV");
+
+    let assignedRole = "NHAN_VIEN";
+    if (empResult.recordset.length > 0) {
+      const title = empResult.recordset[0].ChucVu;
+      if (title === "Quản lý chi nhánh") {
+        assignedRole = "ADMIN_CHI_NHANH";
+      }
+    }
+
     const data = await accountService.createAccount({
       TenDangNhap,
       MatKhau,
       MaNV,
-      Quyen: "NHAN_VIEN",
+      Quyen: assignedRole,
       TrangThai: 1
     });
 
-    res.status(201).json({ message: "Branch account created with role NHAN_VIEN", data });
+    res.status(201).json({ message: `Branch account created with role ${assignedRole}`, data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -153,18 +174,23 @@ exports.unlockAccountLocal = async (req, res) => {
   }
 };
 
-exports.deleteAccountLocal = async (req, res) => {
+exports.resetPasswordLocal = async (req, res) => {
   try {
     const { username } = req.params;
     const { branch } = req.body;
-    if (!branch) return res.status(400).json({ message: "branch is required" });
+    if (!branch) {
+      return res.status(400).json({ message: "branch is required" });
+    }
 
-    const data = await accountService.deleteAccountLocal(username, branch);
-    res.json({ message: "Account deleted locally", data });
+    const newPassword = "123456aA@";
+    const data = await accountService.resetPasswordLocal(username, newPassword, branch);
+    res.json({ message: "Password reset successfully (Local)", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // ========== PERSONAL APIs (NHAN_VIEN) ==========
 

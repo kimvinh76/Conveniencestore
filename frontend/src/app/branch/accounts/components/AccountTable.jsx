@@ -4,7 +4,7 @@ import React from "react";
 /**
  * AccountTable — hiển thị danh sách tài khoản và nút thao tác
  */
-export default function AccountTable({ accounts, loading, employees, canManage, onLock, searchTerm, setSearchTerm, filteredAccounts }) {
+export default function AccountTable({ accounts, loading, employees, canManage, onLock, onResetPassword, searchTerm, setSearchTerm, filteredAccounts }) {
   const getEmployeeName = (maNV) => {
     const emp = employees.find((e) => e.MaNV === maNV);
     return emp ? emp.HoTen : maNV;
@@ -74,15 +74,23 @@ export default function AccountTable({ accounts, loading, employees, canManage, 
                 {canManage && (
                   <td className="text-right">
                     {acc.Quyen === "NHAN_VIEN" ? (
-                      <button
-                        onClick={() => onLock(acc)}
-                        className={`text-sm font-semibold px-3 py-1 rounded-lg transition-colors ${Number(acc.TrangThai) === 1
-                          ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
-                          : "bg-green-50 text-green-600 hover:bg-green-100"
-                          }`}
-                      >
-                        {Number(acc.TrangThai) === 1 ? "Khóa" : "Mở khóa"}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => onResetPassword(acc)}
+                          className="text-sm font-semibold px-2 py-1 mr-2 rounded-lg transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        >
+                          Cấp lại MK
+                        </button>
+                        <button
+                          onClick={() => onLock(acc)}
+                          className={`text-sm font-semibold px-3 py-1 rounded-lg transition-colors ${Number(acc.TrangThai) === 1
+                            ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                            : "bg-green-50 text-green-600 hover:bg-green-100"
+                            }`}
+                        >
+                          {Number(acc.TrangThai) === 1 ? "Khóa" : "Mở khóa"}
+                        </button>
+                      </>
                     ) : (
                       <span className="text-xs text-slate-400 italic font-medium">Bảo vệ bảo mật</span>
                     )}

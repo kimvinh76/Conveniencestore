@@ -86,6 +86,24 @@ export default function Page() {
     }
   };
 
+  const handleResetPassword = async (acc) => {
+    if (!branch) return;
+    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định (123456aA@) không?`)) {
+      return;
+    }
+    
+    try {
+      await apiFetch(`/api/accounts/branch/${acc.TenDangNhap}/reset-password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch }),
+      });
+      alert(`Đã đặt lại mật khẩu thành công cho ${acc.TenDangNhap}. Mật khẩu mới là: 123456aA@`);
+    } catch (err) {
+      alert(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`);
+    }
+  };
+
   // ───────────── Derived state ─────────────
   const availableEmployees = useMemo(
     () => employees.filter((emp) => !accounts.some((acc) => acc.MaNV === emp.MaNV)),
@@ -144,6 +162,7 @@ export default function Page() {
           employees={employees}
           canManage={canManage}
           onLock={handleLock}
+          onResetPassword={handleResetPassword}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           filteredAccounts={filteredAccounts}

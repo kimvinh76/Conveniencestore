@@ -143,6 +143,40 @@ async function unlockAccount(username, branch) {
   return { TenDangNhap: username, TrangThai: 1 };
 }
 
+/**
+ * Reset password (Admin Toàn bộ) - Gọi xuống DB chi nhánh hoặc lưu tại Central
+ */
+async function resetPassword(username, newPassword, branch) {
+  const { hashPassword } = require("./auth-service");
+  const hashedNewPassword = await hashPassword(newPassword);
+  
+  // 1. Cập nhật tại CENTRAL
+  const centralPool = await getPool("CENTRAL");
+  await centralPool.request()
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+  // 2. Cập nhật qua Linked Server (đối với Central gọi)
+  if (branch && branch !== "CENTRAL") {
+    let linkedServerName = "";
+    let linkedDbName = "";
+    if (branch === "HUE") { linkedServerName = process.env.LINKED_HUE || "HUE_SERVER"; linkedDbName = process.env.HUE_DB_NAME || "Store_H"; }
+    else if (branch === "SAIGON") { linkedServerName = process.env.LINKED_SAIGON || "SG_SERVER"; linkedDbName = process.env.SAIGON_DB_NAME || "Store_SG"; }
+    else if (branch === "HANOI") { linkedServerName = process.env.LINKED_HANOI || "HN_SERVER"; linkedDbName = process.env.HANOI_DB_NAME || "Store_HN"; }
+
+    if (linkedServerName) {
+      const sqlUpdate = `UPDATE [${linkedServerName}].[${linkedDbName}].dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap;`;
+      await centralPool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+        .query(sqlUpdate);
+    }
+  }
+
+  return { TenDangNhap: username };
+}
+
 // ========== SERVICE DÀNH CHO CHI NHÁNH (ADMIN_CHI_NHANH) ==========
 
 /**
@@ -195,6 +229,30 @@ async function unlockAccountLocal(username, branch) {
     .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
 
   return { TenDangNhap: username, TrangThai: 1 };
+}
+
+/**
+ * Reset password tại chi nhánh (Admin Chi Nhánh)
+ */
+async function resetPasswordLocal(username, newPassword, branch) {
+  const { hashPassword } = require("./auth-service");
+  const hashedNewPassword = await hashPassword(newPassword);
+  
+  // 1. Cập nhật tại nhánh Local
+  const localPool = await getPool(branch);
+  await localPool.request()
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+  // 2. Đồng thời cập nhật lên CENTRAL để không bị delay
+  const centralPool = await getPool("CENTRAL");
+  await centralPool.request()
+    .input("TenDangNhap", sql.VarChar(50), username)
+    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+  return { TenDangNhap: username };
 }
 
 // ========== SERVICE CHO NHAN_VIEN ==========
@@ -255,11 +313,13 @@ module.exports = {
   updateAccount,
   lockAccount,
   unlockAccount,
+  resetPassword,
 
   // Branch functions
   listAccountsByBranch,
   lockAccountLocal,
   unlockAccountLocal,
+  resetPasswordLocal,
 
   // Personal
   changeOwnPassword,
