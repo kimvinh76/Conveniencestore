@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/purchase-receipts-controller");
-const { requireAuth, requireRole } = require("../middleware/auth");
+const { requireAuth, requirePermission } = require("../middleware/auth");
 
-// Chỉ cho phép ADMIN_CHI_NHANH hoặc ADMIN_TOAN_BO được truy cập chức năng nhập hàng
-router.get("/", requireAuth, requireRole("ADMIN_CHI_NHANH", "ADMIN_TOAN_BO"), controller.listReceipts);
-router.get("/:id", requireAuth, requireRole("ADMIN_CHI_NHANH", "ADMIN_TOAN_BO"), controller.getReceiptDetails);
-router.post("/", requireAuth, requireRole("ADMIN_CHI_NHANH", "ADMIN_TOAN_BO"), controller.createReceipt);
+// Cho phép ADMIN hoặc "Nhân viên kho" được thao tác nhập hàng
+const canImport = requirePermission(["ADMIN_CHI_NHANH", "ADMIN_TOAN_BO"], ["Nhân viên kho"]);
+
+router.get("/", requireAuth, canImport, controller.listReceipts);
+router.get("/:id", requireAuth, canImport, controller.getReceiptDetails);
+router.post("/", requireAuth, canImport, controller.createReceipt);
 
 module.exports = router;

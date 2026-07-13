@@ -47,8 +47,32 @@ function requireRole(...allowedRoles) {
   };
 }
 
+// Middleware phân quyền nâng cao (theo cả role và chức vụ)
+function requirePermission(allowedRoles = [], allowedTitles = []) {
+  return (req, res, next) => {
+    if (!req.auth) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Nếu user có 1 trong các role cho phép
+    if (allowedRoles.includes(req.auth.role)) {
+      return next();
+    }
+
+    // Nếu user có 1 trong các chức vụ cho phép
+    if (req.auth.title && allowedTitles.includes(req.auth.title)) {
+      return next();
+    }
+
+    return res.status(403).json({
+      message: `Forbidden: Bạn không có quyền thực hiện chức năng này.`
+    });
+  };
+}
+
 module.exports = {
   requireAuth,
   getTokenFromRequest,
   requireRole,
+  requirePermission,
 };
