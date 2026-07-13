@@ -7,10 +7,10 @@ export default function ProductCard({ product, onEdit, onDelete }) {
       {/* Product Image */}
       <div className="bg-slate-50 h-40 flex items-center justify-center p-4 relative border-b border-slate-100">
         {product.imageUrl ? (
-          <img 
-            src={product.imageUrl} 
-            alt={product.productName} 
-            className="h-32 object-contain group-hover:scale-105 transition-transform duration-200" 
+          <img
+            src={product.imageUrl}
+            alt={product.productName}
+            className="h-32 object-contain group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
           <span className="text-5xl">🛍️</span>
@@ -46,19 +46,19 @@ export default function ProductCard({ product, onEdit, onDelete }) {
 
         {/* Actions */}
         <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2 justify-end">
-          <button 
+          <button
             type="button"
             onClick={() => onEdit(product)}
             className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
           >
             Sửa
           </button>
-          <button 
+          <button
             type="button"
             onClick={() => onDelete(product.productCode)}
             className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-colors"
           >
-            Xóa
+            Ngừng king doanh
           </button>
         </div>
       </div>

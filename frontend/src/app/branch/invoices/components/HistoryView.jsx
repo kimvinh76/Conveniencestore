@@ -9,14 +9,39 @@ export default function HistoryView({
   setSearchInvoice, 
   openDetails 
 }) {
+  const formattedInvoices = useMemo(() => {
+    return invoices.map(inv => ({
+      "Mã HĐ": inv.MaHD,
+      "Thời gian": new Date(inv.NgayTao).toLocaleString('vi-VN'),
+      "Khách hàng": inv.MaKH ? `${inv.HoTenKhachHang} (${inv.MaKH})` : "Khách vãng lai",
+      "Tổng tiền": new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(inv.TongTien),
+      "Số món": inv.SoMon,
+      "Nhân viên": inv.HoTenNhanVien,
+      "Ghi chú": inv.GhiChu || "",
+      "_original": inv
+    }));
+  }, [invoices]);
+
   const filteredInvoices = useMemo(() => {
-    if (!searchInvoice) return invoices;
-    const lower = searchInvoice.toLowerCase();
-    return invoices.filter(inv => 
-      (inv.MaHD || "").toLowerCase().includes(lower) ||
-      (inv.MaNV || "").toLowerCase().includes(lower)
-    );
-  }, [invoices, searchInvoice]);
+    let result = formattedInvoices;
+    if (searchInvoice) {
+      const lower = searchInvoice.toLowerCase();
+      result = result.filter(inv => 
+        (inv["Mã HĐ"] || "").toLowerCase().includes(lower) ||
+        (inv._original.MaNV || "").toLowerCase().includes(lower) ||
+        (inv["Khách hàng"] || "").toLowerCase().includes(lower)
+      );
+    }
+    // Loại bỏ thuộc tính _original trước khi render table
+    return result.map(({ _original, ...rest }) => rest);
+  }, [formattedInvoices, searchInvoice]);
+
+  const handleRowClick = (row) => {
+    const originalInvoice = invoices.find(inv => inv.MaHD === row["Mã HĐ"]);
+    if (originalInvoice) {
+      openDetails(originalInvoice);
+    }
+  };
 
   return (
     <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[500px]">
@@ -36,7 +61,7 @@ export default function HistoryView({
         {loading ? (
           <p className="text-center py-10 text-slate-500">Đang tải dữ liệu...</p>
         ) : (
-          <DataTable rows={filteredInvoices} onRowClick={openDetails} />
+          <DataTable rows={filteredInvoices} onRowClick={handleRowClick} />
         )}
       </div>
     </section>
