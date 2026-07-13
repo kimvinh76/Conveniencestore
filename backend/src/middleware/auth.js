@@ -41,8 +41,8 @@ function requireRole(...allowedRoles) {
     }
 
     // Nếu không nằm trong danh sách cho phép -> Chặn lại
-    return res.status(403).json({ 
-      message: `Forbidden: Yêu cầu quyền [${allowedRoles.join(', ')}]. Quyền hiện tại của bạn là: ${req.auth.role}` 
+    return res.status(403).json({
+      message: `Forbidden: Yêu cầu quyền [${allowedRoles.join(', ')}]. Quyền hiện tại của bạn là: ${req.auth.role}`
     });
   };
 }

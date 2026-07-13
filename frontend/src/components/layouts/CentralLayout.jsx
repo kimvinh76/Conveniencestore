@@ -22,6 +22,7 @@ export default function CentralLayout({ children }) {
   const navItems = [
     { id: "dashboard", href: "/central", label: "Thống kê toàn cục" },
     { id: "products", href: "/central/products", label: "Sản phẩm" },
+    { id: "customers", href: "/central/customers", label: "Khách hàng" },
     { id: "invoices", href: "/central/invoices", label: "Hóa đơn" },
     { id: "employees", href: "/central/employees", label: "Nhân viên" },
     { id: "suppliers", href: "/central/suppliers", label: "Nhà cung cấp" },
