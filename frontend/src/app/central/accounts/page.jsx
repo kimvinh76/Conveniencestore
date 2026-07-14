@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { apiFetch } from "@/services/api";
 import { useBranch } from "@/hooks/useBranch";
 import { useModal } from "@/hooks/useModal";
+import { useToast } from "@/contexts/ToastContext";
 import CentralAccountTable from "./components/CentralAccountTable";
 import AccountFormModal from "./components/AccountFormModal";
 
@@ -17,6 +18,7 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
+  const showToast = useToast();
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -82,7 +84,7 @@ export default function Page() {
   };
 
   const handleResetPassword = async (acc) => {
-    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định (123456aA@) không?`)) {
+    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định không?`)) {
       return;
     }
     
@@ -92,9 +94,9 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch: acc.ChiNhanh || "CENTRAL" }),
       });
-      alert(`Đã đặt lại mật khẩu thành công cho ${acc.TenDangNhap}. Mật khẩu mới là: 123456aA@`);
+      showToast(`Đã đặt lại mật khẩu cho ${acc.TenDangNhap}. Mật khẩu mặc định là: 123456`, "success");
     } catch (err) {
-      alert(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`);
+      showToast(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`, "error");
     }
   };
 

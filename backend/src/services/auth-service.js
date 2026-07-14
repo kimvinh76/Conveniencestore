@@ -90,7 +90,7 @@ async function findAccountInCentral(username) {
 
 async function findAccountForLogin(username) {
   const record = await findAccountInCentral(username);
-  return record ? { branch: record.ChiNhanh, record } : null;
+  return record; // Trả thẳng kết quả từ DB, không bọc thêm { record, branch }
 }
 
 async function findAccountByEmail(email) {

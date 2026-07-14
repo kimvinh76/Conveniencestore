@@ -31,87 +31,8 @@ async function createAccount(payload) {
     .execute("dbo.usp_Central_ThemTaiKhoan");
   return { TenDangNhap: payload.TenDangNhap, MaNV: payload.MaNV, Quyen: payload.Quyen };
 }
- 
-/**
- * Cập nhật tài khoản CENTRAL (quyền, trạng thái, mật khẩu)
- */
-async function updateAccount(username, payload, requestingUserAuth) {
-  const pool = await getPool("CENTRAL");
-
-  const accountInfoResult = await pool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query(`
-      SELECT tk.MaNV, nv.ChiNhanh
-      FROM dbo.TaiKhoan tk
-      INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
-      WHERE tk.TenDangNhap = @TenDangNhap
-    `);
-
-  if (!accountInfoResult.recordset.length) {
-    throw new Error("Account not found for update.");
-  }
-  const accountBranch = accountInfoResult.recordset[0].ChiNhanh;
-
-  // Lấy thông tin tài khoản hiện tại từ CentralDB để kiểm tra quyền
-  const currentAccountResult = await pool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query(`SELECT Quyen FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap`);
-  const currentAccountRole = currentAccountResult.recordset[0]?.Quyen;
-
-  // Logic bảo mật:
-  // 1. Không được phép thay đổi quyền của tài khoản ADMIN_TOAN_BO
-  if (currentAccountRole === "ADMIN_TOAN_BO" && payload.Quyen && payload.Quyen !== currentAccountRole) {
-    throw new Error("Không được phép thay đổi quyền của tài khoản ADMIN_TOAN_BO.");
-  }
-  // 2. Không được phép nâng cấp tài khoản lên ADMIN_TOAN_BO qua chức năng này
-  if (payload.Quyen === "ADMIN_TOAN_BO" && currentAccountRole !== "ADMIN_TOAN_BO") {
-    throw new Error("Không được phép nâng cấp tài khoản lên ADMIN_TOAN_BO qua chức năng này.");
-  }
-  // 3. ADMIN_TOAN_BO không thể tự hạ cấp hoặc khóa/mở khóa tài khoản của chính mình
-  if (requestingUserAuth.username === username && (payload.Quyen || payload.TrangThai !== undefined)) {
-    throw new Error("Không được phép thay đổi quyền hoặc trạng thái của tài khoản ADMIN_TOAN_BO đang đăng nhập.");
-  }
-
-  await pool
-    .request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .input("MatKhau", sql.VarChar(255), null)
-    .input("Quyen", sql.NVarChar(50), payload.Quyen || null)
-    .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : null)
-    .execute("dbo.usp_Central_CapNhatTaiKhoan");
 
 
-    if (accountBranch !== 'CENTRAL') {
-    let linkedServerUpdateSql = '';
-    let linkedServerName = '';
-    let linkedDbName = '';
-
-    if (accountBranch === 'HUE') {
-      linkedServerName = process.env.LINKED_HUE || 'HUE_SERVER';
-      linkedDbName = process.env.HUE_DB_NAME || 'Store_H';
-    } else if (accountBranch === 'SAIGON') {
-      linkedServerName = process.env.LINKED_SAIGON || 'SG_SERVER';
-      linkedDbName = process.env.SAIGON_DB_NAME || 'Store_SG';
-    } else if (accountBranch === 'HANOI') {
-      linkedServerName = process.env.LINKED_HANOI || 'HN_SERVER';
-      linkedDbName = process.env.HANOI_DB_NAME || 'Store_HN';
-    }
-
-    if (linkedServerName) {
-      linkedServerUpdateSql = `
-        UPDATE [${linkedServerName}].[${linkedDbName}].dbo.TaiKhoan
-        SET Quyen = COALESCE(@Quyen, Quyen), TrangThai = COALESCE(@TrangThai, TrangThai)
-        WHERE TenDangNhap = @TenDangNhap;
-      `;
-      await pool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("Quyen", sql.NVarChar(50), payload.Quyen || null)
-        .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : null)
-        .query(linkedServerUpdateSql);
-    }
-  }
-  return { TenDangNhap: username };
-}
 
 /**
  * Khóa tài khoản (cả CENTRAL và linked branches)
@@ -149,30 +70,14 @@ async function unlockAccount(username, branch) {
 async function resetPassword(username, newPassword, branch) {
   const { hashPassword } = require("./auth-service");
   const hashedNewPassword = await hashPassword(newPassword);
-  
-  // 1. Cập nhật tại CENTRAL
+
+  // Sử dụng Stored Procedure mới để cập nhật Central và đẩy xuống Branch qua Linked Server
   const centralPool = await getPool("CENTRAL");
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-
-  // 2. Cập nhật qua Linked Server (đối với Central gọi)
-  if (branch && branch !== "CENTRAL") {
-    let linkedServerName = "";
-    let linkedDbName = "";
-    if (branch === "HUE") { linkedServerName = process.env.LINKED_HUE || "HUE_SERVER"; linkedDbName = process.env.HUE_DB_NAME || "Store_H"; }
-    else if (branch === "SAIGON") { linkedServerName = process.env.LINKED_SAIGON || "SG_SERVER"; linkedDbName = process.env.SAIGON_DB_NAME || "Store_SG"; }
-    else if (branch === "HANOI") { linkedServerName = process.env.LINKED_HANOI || "HN_SERVER"; linkedDbName = process.env.HANOI_DB_NAME || "Store_HN"; }
-
-    if (linkedServerName) {
-      const sqlUpdate = `UPDATE [${linkedServerName}].[${linkedDbName}].dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap;`;
-      await centralPool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-        .query(sqlUpdate);
-    }
-  }
+    .input("ChiNhanh", sql.VarChar(10), branch)
+    .execute("dbo.usp_Central_DoiMatKhau");
 
   return { TenDangNhap: username };
 }
@@ -188,72 +93,7 @@ async function listAccountsByBranch(branch) {
   return result.recordset;
 }
 
-/**
- * Tạo tài khoản ở chi nhánh (ép quyền = NHAN_VIEN)
 
- */
-
-/**
- * Khóa tài khoản ở chi nhánh (gọi local proc)
- */
-async function lockAccountLocal(username, branch) {
-  const pool = await getPool(branch);
-  await pool
-    .request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .execute("dbo.usp_Local_KhoaTaiKhoan");
-
-  //  Cập nhật ngay lên CentralDB để chặn luồng Đăng nhập
-  const centralPool = await getPool("CENTRAL");
-  await centralPool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query("UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap");
-
-  return { TenDangNhap: username, TrangThai: 0 };
-}
-
-/**
- * Mở khóa tài khoản ở chi nhánh (gọi local proc)
- */
-async function unlockAccountLocal(username, branch) {
-  const pool = await getPool(branch);
-  await pool
-    .request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .execute("dbo.usp_Local_MoKhoaTaiKhoan");
-
-  // Cập nhật ngay lên CentralDB để cho phép đăng nhập lại( giảm độ trễ)
-  const centralPool = await getPool("CENTRAL");
-  await centralPool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
-
-  return { TenDangNhap: username, TrangThai: 1 };
-}
-
-/**
- * Reset password tại chi nhánh (Admin Chi Nhánh)
- */
-async function resetPasswordLocal(username, newPassword, branch) {
-  const { hashPassword } = require("./auth-service");
-  const hashedNewPassword = await hashPassword(newPassword);
-  
-  // 1. Cập nhật tại nhánh Local
-  const localPool = await getPool(branch);
-  await localPool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-
-  // 2. Đồng thời cập nhật lên CENTRAL để không bị delay
-  const centralPool = await getPool("CENTRAL");
-  await centralPool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-
-  return { TenDangNhap: username };
-}
 
 // ========== SERVICE CHO NHAN_VIEN ==========
 
@@ -268,60 +108,35 @@ async function changeOwnPassword(username, oldPassword, newPassword) {
   const account = await findAccountForLogin(username);
   if (!account) throw new Error("Account not found");
 
-  const passwordOk = await verifyPassword(oldPassword, account.record.MatKhau);
+  const passwordOk = await verifyPassword(oldPassword, account.MatKhau);
   if (!passwordOk) throw new Error("Old password is incorrect");
 
-  // Hash mật khẩu mới và update
+  // Hash mật khẩu mới và update qua Stored Procedure
   const hashedNewPassword = await hashPassword(newPassword);
   const pool = await getPool("CENTRAL");
   await pool
     .request()
-    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
     .input("TenDangNhap", sql.VarChar(50), username)
-    .query(`UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap`);
+    .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+    .input("ChiNhanh", sql.VarChar(10), account.ChiNhanh)
+    .execute("dbo.usp_Central_DoiMatKhau");
 
   return { message: "Password changed successfully" };
 }
 
-/**
- * Cập nhật thông tin hồ sơ cá nhân (Dành cho nhân viên tự sửa)
- */
-async function updateOwnProfile(username, payload) {
-  const pool = await getPool("CENTRAL");
-  
-  // Lấy MaNV từ username trước
-  const user = await pool.request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query("SELECT MaNV FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap");
-  
-  if (!user.recordset.length) throw new Error("User not found");
-  const maNV = user.recordset[0].MaNV;
 
-  // Cập nhật thông tin ở bảng NhanVien
-  await pool.request()
-    .input("MaNV", sql.VarChar(50), maNV)
-    .input("HoTen", sql.NVarChar(120), payload.fullName)
-    .query("UPDATE dbo.NhanVien SET HoTen = @HoTen WHERE MaNV = @MaNV");
-
-  return { username, fullName: payload.fullName };
-}
 
 module.exports = {
   // Central functions
   listAllAccountsFromCentral,
   createAccount,
-  updateAccount,
   lockAccount,
   unlockAccount,
   resetPassword,
 
   // Branch functions
   listAccountsByBranch,
-  lockAccountLocal,
-  unlockAccountLocal,
-  resetPasswordLocal,
 
   // Personal
   changeOwnPassword,
-  updateOwnProfile,
 };

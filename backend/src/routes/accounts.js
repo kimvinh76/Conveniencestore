@@ -7,7 +7,6 @@ const router = express.Router();
 // ========== CENTRAL APIs (ADMIN_TOAN_BO) ==========
 router.get("/central", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.listAllAccounts);
 router.post("/central", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.createAccount);
-router.put("/central/:username", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.updateAccount);
 router.patch("/central/:username/lock", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.lockAccount);
 router.patch("/central/:username/unlock", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.unlockAccount);
 router.patch("/central/:username/reset-password", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.resetPassword);
@@ -20,11 +19,6 @@ router.patch("/branch/:username/reset-password", requireAuth, requireRole("ADMIN
 
 // ========== PERSONAL API (NHAN_VIEN - ai cũng dùng được) ==========
 router.patch("/change-password", requireAuth, controller.changeOwnPassword);
-
-
-
-
-router.put("/profile", requireAuth, controller.updateOwnProfile);
 
 
 

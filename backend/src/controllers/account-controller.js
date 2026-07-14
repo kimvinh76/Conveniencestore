@@ -40,19 +40,7 @@ exports.createAccount = async (req, res) => {
   }
 };
 
-exports.updateAccount = [requireRole("ADMIN_TOAN_BO"), async (req, res) => {
-  try {
-    const { username } = req.params;
-    const { TrangThai } = req.body;
 
-    // Chú ý: Backend hiện tại KHÔNG cho phép sửa Quyền bằng API này nữa.
-    // Quyền được đồng bộ hoàn toàn tự động từ Chức vụ (qua DB Trigger / SP).
-    const data = await accountService.updateAccount(username, { TrangThai }, req.auth);
-    res.json({ message: "Account status updated", data });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-}];
 
 exports.lockAccount = async (req, res) => {
   try {
@@ -147,15 +135,20 @@ exports.createBranchAccount = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 exports.lockAccountLocal = async (req, res) => {
   try {
     const { username } = req.params;
     const { branch } = req.body;
     if (!branch) return res.status(400).json({ message: "branch is required" });
 
-    const data = await accountService.lockAccountLocal(username, branch);
-    res.json({ message: "Account locked locally", data });
+    // Bảo mật: Đảm bảo Admin Chi nhánh chỉ thao tác trên chi nhánh của họ
+    if (req.auth.branch !== branch) {
+      return res.status(403).json({ message: "Permission denied: Cannot modify accounts of another branch" });
+    }
+
+    // Chuyển sang dùng hàm Central vì Central quản lý Login (SSO)
+    const data = await accountService.lockAccount(username, branch);
+    res.json({ message: "Account locked successfully", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -167,8 +160,12 @@ exports.unlockAccountLocal = async (req, res) => {
     const { branch } = req.body;
     if (!branch) return res.status(400).json({ message: "branch is required" });
 
-    const data = await accountService.unlockAccountLocal(username, branch);
-    res.json({ message: "Account unlocked locally", data });
+    if (req.auth.branch !== branch) {
+      return res.status(403).json({ message: "Permission denied: Cannot modify accounts of another branch" });
+    }
+
+    const data = await accountService.unlockAccount(username, branch);
+    res.json({ message: "Account unlocked successfully", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -178,13 +175,15 @@ exports.resetPasswordLocal = async (req, res) => {
   try {
     const { username } = req.params;
     const { branch } = req.body;
-    if (!branch) {
-      return res.status(400).json({ message: "branch is required" });
+    if (!branch) return res.status(400).json({ message: "branch is required" });
+
+    if (req.auth.branch !== branch) {
+      return res.status(403).json({ message: "Permission denied: Cannot modify accounts of another branch" });
     }
 
-    const newPassword = "123456aA@";
-    const data = await accountService.resetPasswordLocal(username, newPassword, branch);
-    res.json({ message: "Password reset successfully (Local)", data });
+    const newPassword = "123456"; // Fix the default password
+    const data = await accountService.resetPassword(username, newPassword, branch);
+    res.json({ message: "Password reset successfully", data });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -211,15 +210,3 @@ exports.changeOwnPassword = async (req, res) => {
   }
 };
 
-exports.updateOwnProfile = async (req, res) => {
-  try {
-    const { fullName } = req.body;
-    const username = req.auth?.username || req.auth?.sub;
-
-    if (!username) return res.status(401).json({ message: "Unauthorized" });
-    const result = await accountService.updateOwnProfile(username, { fullName });
-    res.json({ message: "Profile updated successfully", data: result });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};

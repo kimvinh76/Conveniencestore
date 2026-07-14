@@ -59,36 +59,36 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    const { record, branch: matchedBranch } = account;
-    const passwordOk = await verifyPassword(password, record.MatKhau);
+    const branch = account.ChiNhanh; // Lấy trực tiếp từ record SQL
+    const passwordOk = await verifyPassword(password, account.MatKhau);
     if (!passwordOk) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    if (!canAccessBranch(record, matchedBranch)) {
+    if (!canAccessBranch(account, branch)) {
       return res.status(403).json({ message: "This account cannot access the resolved branch" });
     }
 
-    if (Number(record.TrangThai) === 0) {
+    if (Number(account.TrangThai) === 0) {
       return res.status(403).json({ message: "Account is locked" });
     }
 
-    const user = buildAuthUser(record, matchedBranch);
+    const user = buildAuthUser(account, branch);
     const token = createAuthToken({
-      sub: record.TenDangNhap,
-      username: record.TenDangNhap,
-      branch: matchedBranch,
-      employeeId: record.MaNV,
-      role: record.Quyen,
-      fullName: record.HoTen || null,
-      title: record.ChucVu || null,
+      sub: account.TenDangNhap,
+      username: account.TenDangNhap,
+      branch: branch,
+      employeeId: account.MaNV,
+      role: account.Quyen,
+      fullName: account.HoTen || null,
+      title: account.ChucVu || null,
     });
 
     res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions());
 
     return res.json({
       message: "Login successful",
-      branch: matchedBranch,
+      branch: branch,
       user,
     });
   } catch (error) {
