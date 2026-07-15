@@ -84,7 +84,6 @@ export default function LoginPage() {
             {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
             <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Tên đăng nhập</span><input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
             <label className="block"><span className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500" /></label>
-            <div className="flex justify-end"><button type="button" onClick={handleForgotPassword} className="text-sm font-semibold text-cyan-600 hover:underline">Quên mật khẩu?</button></div>
             <button type="submit" disabled={loading} className="w-full rounded-xl px-4 py-3 font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50">{loading ? "Đang xử lý..." : "Đăng nhập"}</button>
           </form>
         </div>

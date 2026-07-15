@@ -6,8 +6,6 @@ const {
   buildAuthUser,
   findAccountForLogin,
   canAccessBranch,
-  createPasswordResetToken,
-  sendPasswordResetEmail,
   hashPassword,
 } = require("../services/auth-service");
 const { requireAuth } = require("../middleware/auth");

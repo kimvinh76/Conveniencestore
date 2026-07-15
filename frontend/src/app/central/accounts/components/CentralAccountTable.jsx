@@ -67,14 +67,12 @@ export default function CentralAccountTable({
                 <td>{roleBadge(acc.Quyen)}</td>
                 <td>
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      Number(acc.TrangThai) === 1 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                    }`}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${Number(acc.TrangThai) === 1 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                      }`}
                   >
                     <span
-                      className={`w-2 h-2 rounded-full ${
-                        Number(acc.TrangThai) === 1 ? "bg-green-500" : "bg-red-500"
-                      }`}
+                      className={`w-2 h-2 rounded-full ${Number(acc.TrangThai) === 1 ? "bg-green-500" : "bg-red-500"
+                        }`}
                     />
                     {Number(acc.TrangThai) === 1 ? "Hoạt động" : "Đã khóa"}
                   </span>
@@ -86,15 +84,14 @@ export default function CentralAccountTable({
                         onClick={() => onResetPassword(acc)}
                         className="text-sm font-semibold px-2 py-1 mr-2 rounded-lg transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
                       >
-                        Cấp lại MK
+                        Cấp lại Mật khẩu
                       </button>
                       <button
                         onClick={() => onLockToggle(acc)}
-                        className={`text-sm font-semibold px-2 py-1 rounded-lg transition-colors ${
-                          Number(acc.TrangThai) === 1
+                        className={`text-sm font-semibold px-2 py-1 rounded-lg transition-colors ${Number(acc.TrangThai) === 1
                             ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
                             : "bg-green-50 text-green-600 hover:bg-green-100"
-                        }`}
+                          }`}
                       >
                         {Number(acc.TrangThai) === 1 ? "Khóa" : "Mở khóa"}
                       </button>

@@ -6,6 +6,7 @@ import { useModal } from "@/hooks/useModal";
 import { useToast } from "@/contexts/ToastContext";
 import AccountTable from "./components/AccountTable";
 import CreateAccountModal from "./components/CreateAccountModal";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Page() {
   const { branch, auth } = useBranch({ requireLocal: true });
@@ -15,6 +16,7 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [resetTarget, setResetTarget] = useState(null); // State cho modal reset pass
 
   const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
   const showToast = useToast();
@@ -88,21 +90,24 @@ export default function Page() {
     }
   };
 
-  const handleResetPassword = async (acc) => {
-    if (!branch) return;
-    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định không?`)) {
-      return;
-    }
+  const handleResetPassword = (acc) => {
+    setResetTarget(acc);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!branch || !resetTarget) return;
     
     try {
-      await apiFetch(`/api/accounts/branch/${acc.TenDangNhap}/reset-password`, {
+      await apiFetch(`/api/accounts/branch/${resetTarget.TenDangNhap}/reset-password`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch }),
       });
-      showToast(`Đã đặt lại mật khẩu cho ${acc.TenDangNhap}. Mật khẩu mặc định là: 123456`, "success");
+      showToast(`Đã đặt lại mật khẩu cho ${resetTarget.TenDangNhap}. Mật khẩu mặc định là: 123456`, "success");
     } catch (err) {
       showToast(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`, "error");
+    } finally {
+      setResetTarget(null);
     }
   };
 
@@ -168,6 +173,16 @@ export default function Page() {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           filteredAccounts={filteredAccounts}
+        />
+        
+        <ConfirmModal
+          isOpen={!!resetTarget}
+          onClose={() => setResetTarget(null)}
+          onConfirm={confirmResetPassword}
+          title="Xác nhận cấp lại mật khẩu"
+          message={`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${resetTarget?.HoTen || resetTarget?.TenDangNhap} về mặc định không?`}
+          confirmText="Cấp lại"
+          cancelText="Hủy"
         />
       </div>
 

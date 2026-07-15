@@ -57,14 +57,7 @@ export default function Page() {
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Tổng quan</p>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard Thống Kê Cục Bộ</h1>
         </div>
-        <div className="flex gap-2 items-center">
-          <Link
-            href="/branch/global-overview"
-            className="btn-primary"
-          >
-            Xem thống kê toàn cục
-          </Link>
-        </div>
+
       </header>
 
       {error && (

@@ -1,34 +1,28 @@
 const { sql, getPool } = require("../db/sqlserver");
 
-async function getNationalRevenue(callerBranch) {
-  const pool = await getPool(callerBranch === "CENTRAL" ? "CENTRAL" : callerBranch);
-  
-  let rows;
-  if (callerBranch === "CENTRAL") {
-    const rs = await pool.request().execute("usp_Central_DoanhThuQuocGia");
-    rows = rs.recordset;
-  } else {
-    const rs = await pool.request().query("SELECT ChiNhanh AS BranchCode, SUM(ThanhTien) AS Revenue FROM dbo.v_HoaDonChiTiet_ToanQuoc GROUP BY ChiNhanh");
-    rows = rs.recordset;
-  }
+async function getNationalRevenue() {
+  const pool = await getPool("CENTRAL");
+
+  const rs = await pool.request().execute("usp_Central_DoanhThuQuocGia");
+  const rows = rs.recordset;
 
   const byBranch = rows.map(r => ({ branch: r.BranchCode || r.ChiNhanh, revenue: Number(r.Revenue || 0) }));
   return {
-    mode: callerBranch === "CENTRAL" ? "SQL_SERVER_CENTRAL_PROC" : "SQL_SERVER_BRANCH_VIEW",
+    mode: "SQL_SERVER_CENTRAL_PROC",
     byBranch,
     nationalRevenue: byBranch.reduce((sum, b) => sum + b.revenue, 0)
   };
 }
 
-async function getCentralAnalyticsOverview(callerBranch) {
-  const pool = await getPool(callerBranch === "CENTRAL" ? "CENTRAL" : callerBranch);
-  
+async function getCentralAnalyticsOverview() {
+  const pool = await getPool("CENTRAL");
+
   const [dailyRows, weeklyRows, topEmployeeRows, topProductRows, compareRows] = await Promise.all([
-    pool.request().execute(callerBranch === "CENTRAL" ? "usp_Central_DoanhThuVaSoDon_TheoNgay" : "usp_DoanhThuVaSoDon_TheoNgay"),
-    pool.request().execute(callerBranch === "CENTRAL" ? "usp_Central_DoanhThuVaSoDon_TheoTuan" : "usp_DoanhThuVaSoDon_TheoTuan"),
-    pool.request().execute(callerBranch === "CENTRAL" ? "usp_Central_NhanVienBanTotNhatTuan" : "usp_NhanVienBanTotNhatTuan"),
-    pool.request().execute(callerBranch === "CENTRAL" ? "usp_Central_SanPhamBanChayNhat_MoiChiNhanh" : "usp_SanPhamBanChayNhat_MoiChiNhanh"),
-    pool.request().execute(callerBranch === "CENTRAL" ? "usp_Central_SoSanhDoanhThuTuan" : "usp_SoSanhDoanhThuTuan")
+    pool.request().execute("usp_Central_DoanhThuVaSoDon_TheoNgay"),
+    pool.request().execute("usp_Central_DoanhThuVaSoDon_TheoTuan"),
+    pool.request().execute("usp_Central_NhanVienBanTotNhatTuan"),
+    pool.request().execute("usp_Central_SanPhamBanChayNhat_MoiChiNhanh"),
+    pool.request().execute("usp_Central_SoSanhDoanhThuTuan")
   ]);
 
   return {
@@ -43,9 +37,9 @@ async function getCentralAnalyticsOverview(callerBranch) {
 async function getBranchDashboard(branch) {
   const pool = await getPool(branch);
   const [summaryRs, revenueRs, topStockRs] = await Promise.all([
-    pool.request().execute("dbo.usp_Local_DashboardTongQuan"),
-    pool.request().execute("dbo.usp_Local_DashboardDoanhThu7Ngay"),
-    pool.request().input("TopN", sql.Int, 8).execute("dbo.usp_Local_DashboardTopTonKho"),
+    pool.request().input("ChiNhanh", sql.VarChar(10), branch).execute("dbo.usp_Local_DashboardTongQuan"),
+    pool.request().input("ChiNhanh", sql.VarChar(10), branch).execute("dbo.usp_Local_DashboardDoanhThu7Ngay"),
+    pool.request().input("ChiNhanh", sql.VarChar(10), branch).input("TopN", sql.Int, 8).execute("dbo.usp_Local_DashboardTopTonKho"),
   ]);
   const summary = (summaryRs.recordset || [])[0] || {};
   const sevenDayRevenue = {};

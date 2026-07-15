@@ -6,6 +6,7 @@ import { useModal } from "@/hooks/useModal";
 import { useToast } from "@/contexts/ToastContext";
 import CentralAccountTable from "./components/CentralAccountTable";
 import AccountFormModal from "./components/AccountFormModal";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Page() {
   const { auth } = useBranch({ requireCentral: true });
@@ -16,6 +17,7 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [resetTarget, setResetTarget] = useState(null);
 
   const { isOpen: isFormOpen, open: openFormModal, close: closeFormModal } = useModal();
   const showToast = useToast();
@@ -83,20 +85,24 @@ export default function Page() {
     }
   };
 
-  const handleResetPassword = async (acc) => {
-    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${acc.HoTen || acc.TenDangNhap} về mặc định không?`)) {
-      return;
-    }
+  const handleResetPassword = (acc) => {
+    setResetTarget(acc);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!resetTarget) return;
     
     try {
-      await apiFetch(`/api/accounts/central/${acc.TenDangNhap}/reset-password`, {
+      await apiFetch(`/api/accounts/central/${resetTarget.TenDangNhap}/reset-password`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branch: acc.ChiNhanh || "CENTRAL" }),
+        body: JSON.stringify({ branch: resetTarget.ChiNhanh || "CENTRAL" }),
       });
-      showToast(`Đã đặt lại mật khẩu cho ${acc.TenDangNhap}. Mật khẩu mặc định là: 123456`, "success");
+      showToast(`Đã đặt lại mật khẩu cho ${resetTarget.TenDangNhap}. Mật khẩu mặc định là: 123456`, "success");
     } catch (err) {
       showToast(`Lỗi khi đặt lại mật khẩu: ${err.message || String(err)}`, "error");
+    } finally {
+      setResetTarget(null);
     }
   };
 
@@ -150,13 +156,23 @@ export default function Page() {
           onLockToggle={handleLockToggle}
           onResetPassword={handleResetPassword}
         />
+        
+        <ConfirmModal
+          isOpen={!!resetTarget}
+          onClose={() => setResetTarget(null)}
+          onConfirm={confirmResetPassword}
+          title="Xác nhận cấp lại mật khẩu"
+          message={`Bạn có chắc chắn muốn đặt lại mật khẩu của nhân viên ${resetTarget?.HoTen || resetTarget?.TenDangNhap} về mặc định không?`}
+          confirmText="Cấp lại"
+          cancelText="Hủy"
+        />
       </div>
 
 
 
 
 
-      {/* Modal Tạo mới tài khoản */}
+      {/* Modal tạo tài khoản mới */}
       {isFormOpen && (
         <AccountFormModal
           form={form}

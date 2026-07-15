@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/services/api";
 
 const BRANCH_LABELS = {
-  HUE: "Chi nhánh Huế (Port 1401)",
-  SAIGON: "Chi nhánh Sài Gòn (Port 1402)",
-  HANOI: "Chi nhánh Hà Nội (Port 1403)",
-  CENTRAL: "Tổng công ty (Port 1404)",
+  HUE: "Chi nhánh Huế ",
+  SAIGON: "Chi nhánh Sài Gòn ",
+  HANOI: "Chi nhánh Hà Nội ",
+  CENTRAL: "Tổng công ty ",
 };
 
 function getCookie(name) {
@@ -72,7 +72,7 @@ export function useBranch({ requireLocal = false, requireCentral = false } = {})
       }
     };
 
-    syncAuthState().catch(() => {});
+    syncAuthState().catch(() => { });
 
     return () => {
       cancelled = true;
@@ -85,7 +85,7 @@ export function useBranch({ requireLocal = false, requireCentral = false } = {})
   };
 
   const logout = () => {
-    apiFetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    apiFetch("/api/auth/logout", { method: "POST" }).catch(() => { });
     deleteCookie("current_branch");
     router.replace("/");
   };

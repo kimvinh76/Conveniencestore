@@ -79,7 +79,7 @@ export default function AccountTable({ accounts, loading, employees, canManage, 
                           onClick={() => onResetPassword(acc)}
                           className="text-sm font-semibold px-2 py-1 mr-2 rounded-lg transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
                         >
-                          Cấp lại MK
+                          Cấp lại Mật khẩu
                         </button>
                         <button
                           onClick={() => onLock(acc)}

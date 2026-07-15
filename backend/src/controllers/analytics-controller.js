@@ -4,8 +4,10 @@ const { normalizeBranch } = require("../config/branches");
 
 exports.getNationalRevenue = async (req, res) => {
   try {
-    const branch = normalizeBranch(req.query.branch);
-    const report = await analyticsService.getNationalRevenue(branch);
+    const branch = normalizeBranch(req.auth?.branch || req.query.branch);
+    if (branch !== "CENTRAL") return res.status(403).json({ message: "Access denied. Only CENTRAL can view global revenue." });
+    
+    const report = await analyticsService.getNationalRevenue();
     res.json(report);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -14,8 +16,10 @@ exports.getNationalRevenue = async (req, res) => {
 
 exports.getOverview = async (req, res) => {
   try {
-    const branch = normalizeBranch(req.query.branch);
-    const report = await analyticsService.getCentralAnalyticsOverview(branch);
+    const branch = normalizeBranch(req.auth?.branch || req.query.branch);
+    if (branch !== "CENTRAL") return res.status(403).json({ message: "Access denied. Only CENTRAL can view global overview." });
+
+    const report = await analyticsService.getCentralAnalyticsOverview();
     res.json(report);
   } catch (error) {
     res.status(500).json({ message: error.message });
