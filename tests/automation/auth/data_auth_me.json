@@ -1,0 +1,20 @@
+[
+  {
+    "test_case_name": "Happy - Đã đăng nhập, lấy Profile thành công",
+    "has_cookie": "true",
+    "expected_status": 200,
+    "expected_username": "any"
+  },
+  {
+    "test_case_name": "Bad - Chưa đăng nhập (Không gửi Cookie)",
+    "has_cookie": "false",
+    "expected_status": 401,
+    "expected_username": ""
+  },
+  {
+    "test_case_name": "Bad - Gửi Cookie giả mạo / Hết hạn",
+    "has_cookie": "fake",
+    "expected_status": 401,
+    "expected_username": ""
+  }
+]

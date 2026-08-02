@@ -1,0 +1,111 @@
+{
+	"id": "e7964ce3-904b-4a3e-95be-af87cc87c9e4",
+	"name": "DDBMS API",
+	"timestamp": "2026-08-02T10:46:03.246Z",
+	"collection_id": "47112584-b677ec43-613e-420e-849e-43c2f15126ce",
+	"folder_id": "47112584-4ff24c1c-c60a-443e-9115-36ef1c50327f",
+	"environment_id": "0",
+	"totalPass": 22,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-08-02T10:46:01.923Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "2340103a-da0f-4a82-bdb3-07bb40f2cf74",
+			"name": "/api/auth/login",
+			"url": "http://localhost:3001/api/auth/login",
+			"time": 4,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response time is less than 500ms": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 9,
+					"fail": 0
+				},
+				"Response time is less than 500ms": {
+					"pass": 9,
+					"fail": 0
+				},
+				"Response contains user object": {
+					"pass": 2,
+					"fail": 0
+				},
+				"Cookie is set successfully": {
+					"pass": 2,
+					"fail": 0
+				}
+			},
+			"times": [
+				89,
+				83,
+				79,
+				2,
+				3,
+				2,
+				5,
+				4,
+				4
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true,
+					"Response contains user object": true,
+					"Cookie is set successfully": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true,
+					"Response contains user object": true,
+					"Cookie is set successfully": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				},
+				{
+					"Status code is 200": true,
+					"Response time is less than 500ms": true
+				}
+			]
+		}
+	],
+	"count": 9,
+	"totalTime": 271,
+	"collection": {
+		"requests": [
+			{
+				"id": "2340103a-da0f-4a82-bdb3-07bb40f2cf74",
+				"method": "POST"
+			}
+		]
+	}
+}
