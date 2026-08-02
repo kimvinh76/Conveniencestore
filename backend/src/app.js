@@ -26,6 +26,16 @@ app.use(cors({ origin: frontendOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+const swaggerUi = require('swagger-ui-express');
+const fs = require('fs');
+const path = require('path');
+// Chỉ mount Swagger UI nếu file output đã được sinh ra
+const swaggerFile = path.join(__dirname, '../swagger_output.json');
+if (fs.existsSync(swaggerFile)) {
+  const swaggerDocument = require(swaggerFile);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
+
 app.use("/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeesRoutes);
@@ -39,6 +49,12 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/purchase-receipts", purchaseReceiptsRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/customers", customerRoutes);
+
+const categoriesRoutes = require("./routes/categories");
+const brandsRoutes = require("./routes/brands");
+
+app.use("/api/categories", categoriesRoutes);
+app.use("/api/brands", brandsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: "Not found" });
