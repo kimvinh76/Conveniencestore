@@ -10,6 +10,6 @@ router.get("/:productCode", requireAuth, controller.getProduct);
 // NHƯNG CHỈ Admin Tổng mới được THÊM/SỬA/XÓA sản phẩm (Nhân bản toàn phần)
 router.post("/", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.createProduct);
 router.put("/:productCode", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.updateProduct);
-router.delete("/:productCode", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.deleteProduct);
+router.patch("/:productCode/status", requireAuth, requireRole("ADMIN_TOAN_BO"), controller.toggleStatus);
 
 module.exports = router;

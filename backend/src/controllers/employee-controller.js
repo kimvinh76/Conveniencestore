@@ -5,10 +5,33 @@ exports.listEmployees = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
     if (!branch) return res.status(400).json({ message: "branch is required" });
+
+    // Lỗi bảo mật: Chặn Admin chi nhánh thao tác trên chi nhánh khác
+    if (req.auth?.role !== "ADMIN_TOAN_BO" && req.auth?.branch !== branch) {
+      return res.status(403).json({ message: "Lỗi bảo mật: Admin chi nhánh không được thao tác trên chi nhánh khác!" });
+    }
+
     const rows = await employeeService.listEmployeesByBranch(branch);
     res.json({ branch, count: rows.length, data: rows });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.number && error.number >= 50000) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
+  }
+};
+
+exports.listAllEmployees = async (req, res) => {
+  try {
+    const branch = normalizeBranch(req.query.branch);
+    if (branch !== "CENTRAL") return res.status(400).json({ message: "branch must be CENTRAL" });
+    const rows = await employeeService.listAllEmployeesFromCentral();
+    res.json({ branch, count: rows.length, data: rows });
+  } catch (error) {
+    if (error.number && error.number >= 50000) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
   }
 };
 
@@ -17,6 +40,10 @@ exports.createEmployee = async (req, res) => {
     const branch = normalizeBranch(req.query.branch);
     if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
     
+    if (req.auth?.role !== "ADMIN_TOAN_BO" && req.auth?.branch !== branch) {
+      return res.status(403).json({ message: "Lỗi bảo mật: Admin chi nhánh không được thao tác trên chi nhánh khác!" });
+    }
+
     const MaNV = req.body.MaNV ? String(req.body.MaNV).trim() : "";
     const HoTen = req.body.HoTen ? String(req.body.HoTen).trim() : "";
     const ChucVu = req.body.ChucVu ? String(req.body.ChucVu).trim() : "";
@@ -54,7 +81,10 @@ exports.createEmployee = async (req, res) => {
     const data = await employeeService.createEmployee(branch, payload);
     res.status(201).json({ message: "Employee created", data });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.number && error.number >= 50000) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
   }
 };
 
@@ -62,6 +92,11 @@ exports.updateEmployee = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
     if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
+
+    if (req.auth?.role !== "ADMIN_TOAN_BO" && req.auth?.branch !== branch) {
+      return res.status(403).json({ message: "Lỗi bảo mật: Admin chi nhánh không được thao tác trên chi nhánh khác!" });
+    }
+
     const { employeeId } = req.params;
 
     const HoTen = req.body.HoTen !== undefined ? String(req.body.HoTen).trim() : undefined;
@@ -99,7 +134,10 @@ exports.updateEmployee = async (req, res) => {
     const data = await employeeService.updateEmployee(branch, employeeId, payload);
     res.json({ message: "Employee updated", data });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.number && error.number >= 50000) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
   }
 };
 
@@ -107,10 +145,22 @@ exports.deleteEmployee = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
     if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
+
+    if (req.auth?.role !== "ADMIN_TOAN_BO" && req.auth?.branch !== branch) {
+      return res.status(403).json({ message: "Lỗi bảo mật: Admin chi nhánh không được thao tác trên chi nhánh khác!" });
+    }
+
     const { employeeId } = req.params;
     const data = await employeeService.deleteEmployee(branch, employeeId);
     res.json({ message: "Employee deleted", data });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (
+      error.message.includes("not found") || 
+      error.message.includes("không tìm thấy") || 
+      (error.number && error.number >= 50000)
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
   }
 };

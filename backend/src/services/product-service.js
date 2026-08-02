@@ -1,7 +1,7 @@
 const { sql, getPool } = require("../db/sqlserver");
 
 const PROCS = {
-  list: "dbo.usp_Chung_DanhSachHangHoa",
+  list: "dbo.usp_Chung_DanhSachHangHoaKemTonKho",
   byCode: "dbo.usp_Chung_HangHoaTheoMaSP",
   create: "dbo.usp_Central_ThemHangHoaMoi",
   update: "dbo.usp_Central_CapNhatHangHoa",
@@ -10,27 +10,9 @@ const PROCS = {
 
 async function listProducts(branch) {
   const pool = await getPool(branch);
-  if (branch !== "CENTRAL") {
-    const query = `
-      SELECT 
-        hh.MaSP AS productCode,
-        hh.TenHang AS productName,
-        CAST(hh.Gia AS DECIMAL(10,2)) AS unitPrice,
-        hh.MoTa AS description,
-        hh.AnhSanPham AS imageUrl,
-        hh.DonViTinh AS unit,
-        ISNULL(tk.SoLuongTon, 0) AS stock,
-        CAST(hh.TrangThai AS BIT) AS active
-      FROM dbo.HangHoa hh
-      LEFT JOIN dbo.TonKho tk ON tk.MaSP = hh.MaSP AND tk.ChiNhanh = @Branch
-      ORDER BY hh.MaSP;
-    `;
-    const result = await pool.request()
-      .input("Branch", sql.VarChar(10), branch)
-      .query(query);
-    return result.recordset;
-  }
-  const result = await pool.request().execute(PROCS.list);
+  const result = await pool.request()
+    .input("ChiNhanh", sql.VarChar(10), branch)
+    .execute(PROCS.list);
   return result.recordset;
 }
 
@@ -40,21 +22,26 @@ async function getProductByCode(branch, productCode) {
     .input("MaSP", sql.VarChar(50), productCode)
     .execute(PROCS.byCode);
   const row = rs.recordset[0];
-  return row ? { 
-    branch, 
-    productCode: row.MaSP, 
-    productName: row.TenHang, 
-    unitPrice: Number(row.Gia || 0), 
-    description: row.MoTa, 
-    imageUrl: row.AnhSanPham, 
+  return row ? {
+    branch,
+    productCode: row.MaSP,
+    productName: row.TenHang,
+    unitPrice: Number(row.Gia || 0),
+    description: row.MoTa,
+    imageUrl: row.AnhSanPham,
     unit: row.DonViTinh,
-    active: row.TrangThai !== undefined ? Boolean(row.TrangThai) : true
+    active: row.TrangThai !== undefined ? Boolean(row.TrangThai) : true,
+    categoryCode: row.MaDM,
+    categoryName: row.TenDM,
+    brandCode: row.MaTH,
+    brandName: row.TenTH,
+    barcode: row.Barcode
   } : null;
 }
 
 async function createProduct(payload) {
   const pool = await getPool("CENTRAL");
-  const { productCode, productName, unitPrice, description, imageUrl, unit } = payload;
+  const { productCode, productName, unitPrice, description, imageUrl, unit, categoryCode, brandCode, barcode } = payload;
   await pool.request()
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TenHang", sql.NVarChar(100), productName)
@@ -62,27 +49,44 @@ async function createProduct(payload) {
     .input("MoTa", sql.NVarChar(500), description || null)
     .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
     .input("DonViTinh", sql.NVarChar(50), unit || null)
+    .input("MaDM", sql.VarChar(20), categoryCode || null)
+    .input("MaTH", sql.VarChar(20), brandCode || null)
+    .input("Barcode", sql.VarChar(50), barcode || null)
     .execute(PROCS.create);
-  return { productCode, productName, unitPrice, description, imageUrl, unit };
+  return { productCode, productName, unitPrice, description, imageUrl, unit, categoryCode, brandCode, barcode };
 }
 
 async function updateProduct(productCode, payload) {
   const pool = await getPool("CENTRAL");
+  const { productName, unitPrice, description, imageUrl, unit, active, categoryCode, brandCode, barcode } = payload;
   await pool.request()
     .input("MaSP", sql.VarChar(50), productCode)
-    .input("TenHang", sql.NVarChar(100), payload.productName || null)
-    .input("Gia", sql.Decimal(10, 2), payload.unitPrice || null)
-    .input("MoTa", sql.NVarChar(500), payload.description || null)
-    .input("AnhSanPham", sql.VarChar(255), payload.imageUrl || null)
-    .input("DonViTinh", sql.NVarChar(50), payload.unit || null)
+    .input("TenHang", sql.NVarChar(100), productName)
+    .input("Gia", sql.Decimal(10, 2), unitPrice)
+    .input("MoTa", sql.NVarChar(500), description || null)
+    .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
+    .input("DonViTinh", sql.NVarChar(50), unit || null)
+    .input("MaDM", sql.VarChar(20), categoryCode || null)
+    .input("MaTH", sql.VarChar(20), brandCode || null)
+    .input("Barcode", sql.VarChar(50), barcode || null)
+    .input("TrangThai", sql.Int, active ? 1 : 0)
     .execute(PROCS.update);
-  return { productCode, updated: true };
+  return { productCode, ...payload };
 }
 
-async function deleteProduct(productCode) {
+async function toggleProductStatus(productCode, active) {
   const pool = await getPool("CENTRAL");
-  await pool.request().input("MaSP", sql.VarChar(50), productCode).execute(PROCS.delete);
-  return { productCode, deleted: true, message: "Sản phẩm đã được ngừng kinh doanh (Soft Delete)" };
+  await pool.request()
+    .input("MaSP", sql.VarChar(50), productCode)
+    .input("TrangThai", sql.Bit, active ? 1 : 0)
+    .execute(PROCS.update);
+  return { message: "Status updated" };
 }
 
-module.exports = { listProducts, getProductByCode, createProduct, updateProduct, deleteProduct };
+module.exports = {
+  listProducts,
+  getProductByCode,
+  createProduct,
+  updateProduct,
+  toggleProductStatus
+};

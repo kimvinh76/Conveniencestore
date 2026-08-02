@@ -24,15 +24,4 @@ exports.getOverview = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
-
-exports.listAllEmployees = async (req, res) => {
-  try {
-    const branch = normalizeBranch(req.query.branch);
-    if (branch !== "CENTRAL") return res.status(400).json({ message: "branch must be CENTRAL" });
-    const rows = await employeeService.listAllEmployeesFromCentral();
-    res.json({ branch, count: rows.length, data: rows });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+};

@@ -12,6 +12,12 @@ async function listEmployeesByBranch(branchCode) {
   return result.recordset;
 }
 
+async function listAllEmployeesFromCentral() {
+  const pool = await getPool("CENTRAL");
+  const result = await pool.request().execute("usp_Central_DanhSachNhanVienToanBo");
+  return result.recordset;
+}
+
 async function createEmployee(branchCode, payload) {
   const pool = await getPool(branchCode);
   const maNV = payload.MaNV || `${branchCode[0]}${String(Date.now()).slice(-4)}`;
@@ -52,28 +58,33 @@ async function deleteEmployee(branchCode, maNV) {
     .input("MaNV", sql.VarChar(50), maNV)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
     .execute(PROCS.delete);
-  return beforeDelete.recordset[0];
-}
 
-async function listAllEmployeesFromCentral() {
-  const pool = await getPool("CENTRAL");
-  const branches = [
-    { code: "HUE", server: process.env.LINKED_HUE || "HUE_SERVER", db: process.env.HUE_DB_NAME || "Store_H" },
-    { code: "SAIGON", server: process.env.LINKED_SAIGON || "SG_SERVER", db: process.env.SAIGON_DB_NAME || "Store_SG" },
-    { code: "HANOI", server: process.env.LINKED_HANOI || "HN_SERVER", db: process.env.HANOI_DB_NAME || "Store_HN" }
-  ];
-  const results = [];
-  for (const b of branches) {
-    const rs = await pool.request().query(`SELECT * FROM [${b.server}].[${b.db}].dbo.NhanVien;`);
-    results.push(...(rs.recordset || []));
+  // Đồng bộ khóa tài khoản trên Central (Ngoại trừ lỗi không tìm thấy tài khoản)
+  const accountService = require("./account-service");
+  try {
+    // Phải tìm Tên đăng nhập (Username) dựa trên Mã NV trước khi khóa
+    const centralPool = await getPool("CENTRAL");
+    const accountLookup = await centralPool.request()
+      .input("MaNV", sql.VarChar(50), maNV)
+      .query("SELECT TOP 1 TenDangNhap FROM TaiKhoan WHERE MaNV = @MaNV");
+
+    if (accountLookup.recordset.length > 0) {
+      const username = accountLookup.recordset[0].TenDangNhap;
+      await accountService.lockAccount(username, branchCode);
+    }
+  } catch (err) {
+    if (err.number !== 50002 && err.message !== "Account not found") {
+      console.error(`Lỗi khi khóa tài khoản liên kết của ${maNV}:`, err);
+    }
   }
-  return results;
+
+  return beforeDelete.recordset[0];
 }
 
 module.exports = {
   listEmployeesByBranch,
+  listAllEmployeesFromCentral,
   createEmployee,
   updateEmployee,
-  deleteEmployee,
-  listAllEmployeesFromCentral
+  deleteEmployee
 };
