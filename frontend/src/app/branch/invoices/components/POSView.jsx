@@ -23,15 +23,18 @@ export default function POSView({ products, searchTerm, setSearchTerm, addToCart
       <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 overflow-y-auto pr-2 content-start flex-1">
         {filteredProducts.map(p => {
           const isOutOfStock = p.stock !== undefined && p.stock <= 0;
+          const isInactive = p.active === false;
+          const isDisabled = isOutOfStock || isInactive;
           return (
             <button
               key={p.productCode}
               onClick={() => addToCart(p)}
-              disabled={isOutOfStock}
-              className={`flex flex-col items-center justify-center text-center p-4 bg-white border rounded-2xl transition-all aspect-square group ${isOutOfStock
-                ? "opacity-50 border-slate-200 cursor-not-allowed bg-slate-50"
-                : "border-slate-200 hover:border-teal-400 hover:shadow-md cursor-pointer"
-                }`}
+              disabled={isDisabled}
+              className={`flex flex-col items-center justify-center text-center p-4 bg-white border rounded-2xl transition-all aspect-square group ${
+                isDisabled
+                  ? "opacity-60 border-slate-200 cursor-not-allowed bg-slate-100"
+                  : "border-slate-200 hover:border-teal-400 hover:shadow-md cursor-pointer"
+              } ${isInactive ? "grayscale" : ""}`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors relative overflow-visible ${isOutOfStock
                 ? "bg-slate-200 text-slate-400"
@@ -55,9 +58,15 @@ export default function POSView({ products, searchTerm, setSearchTerm, addToCart
                 )}
               </div>
               <span className="font-bold text-sm text-slate-700 line-clamp-2">{p.productName}</span>
-              <span className="text-xs text-teal-600 font-bold mt-1">
-                {isOutOfStock ? "Hết hàng" : `${Number(p.unitPrice).toLocaleString('vi-VN')} đ`}
-              </span>
+              <div className="mt-1">
+                {isInactive ? (
+                  <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded">Ngừng kinh doanh</span>
+                ) : isOutOfStock ? (
+                  <span className="text-xs font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded">Hết hàng</span>
+                ) : (
+                  <span className="text-xs text-teal-600 font-bold">{Number(p.unitPrice).toLocaleString('vi-VN')} đ</span>
+                )}
+              </div>
             </button>
           );
         })}

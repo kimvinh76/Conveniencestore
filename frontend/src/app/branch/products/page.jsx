@@ -2,14 +2,21 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/services/api";
 import { useBranch } from "@/hooks/useBranch";
+import { useToast } from "@/contexts/ToastContext";
+import { useModal } from "@/hooks/useModal";
 import ProductList from "./components/ProductList";
-
+import ProductDetailModal from "./components/ProductDetailModal";
 
 export default function Page() {
   const { branch } = useBranch({ requireLocal: true });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const showNotification = useToast();
+  const { isOpen: isDetailOpen, open: openDetailModal, close: closeDetailModal } = useModal();
 
   const load = async () => {
     if (!branch) return;
@@ -26,12 +33,33 @@ export default function Page() {
         imageUrl: row.imageUrl,
         unit: row.unit,
         active: row.active ?? true,
+        categoryCode: row.categoryCode,
+        categoryName: row.categoryName,
+        brandCode: row.brandCode,
+        brandName: row.brandName,
+        barcode: row.barcode,
       }));
       setRows(normalized);
     } catch (err) {
       setError(err.message || String(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewDetail = async (productCode) => {
+    if (!branch) return;
+    setDetailLoading(true);
+    setSelectedProduct(null);
+    openDetailModal();
+    try {
+      const data = await apiFetch(`/api/products/${productCode}?branch=${branch}`);
+      setSelectedProduct(data);
+    } catch (err) {
+      showNotification(err.message || String(err), "error");
+      closeDetailModal();
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -57,9 +85,17 @@ export default function Page() {
       ) : (
         <ProductList
           products={rows}
-
+          onViewDetail={handleViewDetail}
         />
       )}
+
+      {/* Modal Chi Tiết Sản Phẩm */}
+      <ProductDetailModal
+        isOpen={isDetailOpen}
+        onClose={closeDetailModal}
+        product={selectedProduct}
+        loading={detailLoading}
+      />
     </div>
   );
 }

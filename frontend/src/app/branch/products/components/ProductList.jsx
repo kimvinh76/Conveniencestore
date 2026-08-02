@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import ProductCard from "./ProductCard";
 
-export default function ProductList({ products }) {
+export default function ProductList({ products, onViewDetail }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredProducts = useMemo(() => {
@@ -40,6 +40,7 @@ export default function ProductList({ products }) {
             <ProductCard
               key={p.productCode}
               product={p}
+              onViewDetail={onViewDetail}
             />
           ))}
         </div>

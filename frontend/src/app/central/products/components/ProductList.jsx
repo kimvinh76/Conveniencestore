@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import ProductCard from "./ProductCard";
 
-export default function ProductList({ products, onEdit, onDelete }) {
+export default function ProductList({ products, onEdit, onDelete, onViewDetail }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredProducts = useMemo(() => {
@@ -42,6 +42,7 @@ export default function ProductList({ products, onEdit, onDelete }) {
               product={p}
               onEdit={onEdit}
               onDelete={onDelete}
+              onViewDetail={onViewDetail}
             />
           ))}
         </div>

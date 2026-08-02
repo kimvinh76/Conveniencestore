@@ -37,7 +37,7 @@ export default function Page() {
 
   const loadEmployees = async () => {
     try {
-      const res = await apiFetch("/api/all-employees?branch=CENTRAL");
+      const res = await apiFetch("/api/employees/all?branch=CENTRAL");
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setError("Không thể tải danh sách nhân viên.");

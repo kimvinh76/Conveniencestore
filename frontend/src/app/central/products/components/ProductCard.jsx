@@ -1,9 +1,14 @@
 "use client";
 import React from "react";
 
-export default function ProductCard({ product, onEdit, onDelete }) {
+export default function ProductCard({ product, onEdit, onDelete, onViewDetail }) {
+  const isInactive = product.active === false;
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all overflow-hidden flex flex-col h-full group">
+    <div 
+      onClick={() => onViewDetail && onViewDetail(product.productCode)}
+      className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all overflow-hidden flex flex-col h-full group cursor-pointer"
+    >
       {/* Product Image */}
       <div className="bg-slate-50 h-40 flex items-center justify-center p-4 relative border-b border-slate-100">
         {product.imageUrl ? (
@@ -33,33 +38,42 @@ export default function ProductCard({ product, onEdit, onDelete }) {
           {product.productName}
         </h3>
 
-        <p className="text-xs text-slate-500 line-clamp-2 flex-1">
-          {product.description || "Chưa có mô tả chi tiết cho sản phẩm này."}
-        </p>
+        <div className="flex flex-col gap-1 mt-1 mb-2">
+          <p className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="font-semibold">Danh mục:</span> {product.categoryName || "Chưa phân loại"}
+          </p>
+          <p className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="font-semibold">Thương hiệu:</span> {product.brandName || "Chưa có hãng"}
+          </p>
+          {product.barcode && (
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              <span className="font-semibold">Mã vạch:</span> {product.barcode}
+            </p>
+          )}
+        </div>
 
         <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
-          <span className="text-xs font-semibold text-slate-400">Giá bán gốc</span>
           <span className="text-lg font-black text-indigo-600">
             {Number(product.unitPrice).toLocaleString('vi-VN')} đ
           </span>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={() => onEdit(product)}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
-          >
-            Sửa
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(product.productCode)}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-colors"
-          >
-            Ngừng king doanh
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(product); }}
+              className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+            >
+              Sửa
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(product); }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                product.active
+                  ? "text-rose-700 bg-rose-50 hover:bg-rose-100"
+                  : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+              }`}
+            >
+              {product.active ? "Tạm ngưng" : "Mở bán lại"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
