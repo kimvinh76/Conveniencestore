@@ -14,8 +14,9 @@ Dưới đây là mã Javascript "chấm điểm" (Test Scripts) và hướng d�
 - **Code JS (Dán vào tab Scripts > Post-response):**
   ```javascript
   const expectedStatus = pm.iterationData.get("expected_status") || 200;
+  const testCaseName = pm.iterationData.get("test_case_name") || "Test Case";
 
-  pm.test(`HTTP Status là ${expectedStatus}`, function () {
+  pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {
       pm.response.to.have.status(expectedStatus);
   });
 
@@ -54,8 +55,9 @@ Dưới đây là mã Javascript "chấm điểm" (Test Scripts) và hướng d�
 - **Code JS (Dán vào tab Scripts > Post-response):**
   ```javascript
   const expectedStatus = pm.iterationData.get("expected_status") || 200;
+  const testCaseName = pm.iterationData.get("test_case_name") || "Test Case";
 
-  pm.test(`HTTP Status là ${expectedStatus}`, function () {
+  pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {
       pm.response.to.have.status(expectedStatus);
   });
 
@@ -67,6 +69,11 @@ Dưới đây là mã Javascript "chấm điểm" (Test Scripts) và hướng d�
           pm.expect(jsonData).to.have.property("email");
           pm.expect(jsonData).to.have.property("fullName");
       });
+  } else if (pm.response.code === 401) {
+      pm.test("Mã lỗi trả về không cho phép truy cập", function () {
+          const jsonData = pm.response.json();
+          pm.expect(jsonData).to.have.property("error");
+      });
   }
   ```
 
@@ -77,8 +84,9 @@ Dưới đây là mã Javascript "chấm điểm" (Test Scripts) và hướng d�
 - **Code JS (Dán vào tab Scripts > Post-response):**
   ```javascript
   const expectedStatus = pm.iterationData.get("expected_status") || 200;
+  const testCaseName = pm.iterationData.get("test_case_name") || "Test Case";
 
-  pm.test(`HTTP Status là ${expectedStatus}`, function () {
+  pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {
       pm.response.to.have.status(expectedStatus);
   });
 
