@@ -36,3 +36,14 @@ Thumbs.db
 *.bak
 *.log
 *.sql.design
+# Agent/Tool generated
+.agents/
+scaffold.js
+scaffold_js.js
+
+# Newman Reports
+tests/QA-API-Testing-Project/reports/*.html
+tests/QA-API-Testing-Project/reports/*.json
+
+# Postman / Newman config
+tests/QA-API-Testing-Project/.newman/
