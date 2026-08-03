@@ -1,0 +1,12 @@
+[
+  {
+    "test_case_name": "Happy - Đăng xuất khi đã có Cookie hợp lệ",
+    "has_cookie": "true",
+    "expected_status": 200
+  },
+  {
+    "test_case_name": "Edge - Cố tình gọi Đăng xuất nhiều lần (Không có Cookie)",
+    "has_cookie": "false",
+    "expected_status": 200
+  }
+]
