@@ -16,7 +16,7 @@ const accountsRoutes = require("./routes/accounts");
 const purchaseReceiptsRoutes = require("./routes/purchase-receipts");
 const suppliersRoutes = require("./routes/suppliers");
 const customerRoutes = require("./routes/customer-routes");
-
+const promotionsRoutes = require("./routes/promotions");
 
 const app = express();
 
@@ -49,6 +49,7 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/purchase-receipts", purchaseReceiptsRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/promotions", promotionsRoutes);
 
 const categoriesRoutes = require("./routes/categories");
 const brandsRoutes = require("./routes/brands");

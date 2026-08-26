@@ -26,9 +26,13 @@ exports.getInvoiceDetails = async (req, res) => {
 exports.createInvoice = async (req, res) => {
   try {
     const branch = normalizeBranch(req.body.branch);
+    const { promos, diemSuDung, ...rest } = req.body;
+    
     const payload = {
-      ...req.body,
-      branch
+      ...rest,
+      branch,
+      promos: Array.isArray(promos) ? promos : [],
+      diemSuDung: parseInt(diemSuDung, 10) || 0
     };
     const created = await invoiceService.createInvoice(payload);
     res.status(201).json({ message: "Invoice created successfully", data: created });
