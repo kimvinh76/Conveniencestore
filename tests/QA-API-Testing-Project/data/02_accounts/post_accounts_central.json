@@ -1,5 +1,51 @@
 [
   {
-    "test_case_name": "Tên kịch bản test"
+    "test_case_name": "Happy - Admin Toàn Bộ tạo tài khoản Central",
+    "run_as": "admin_central",
+    "payload": {
+      "TenDangNhap": "admin_central_test1",
+      "MatKhau": "password123",
+      "MaNV": "NV_CENTRAL_01",
+      "TrangThai": 1
+    },
+    "expected_status": 400,
+    "expected_message_contains": "Nhân viên không tồn tại"
+  },
+  {
+    "test_case_name": "Bad - Admin Chi nhánh cố tạo tài khoản Central",
+    "run_as": "admin_branch_1",
+    "payload": {
+      "TenDangNhap": "admin_central_test2",
+      "MatKhau": "password123",
+      "MaNV": "NV_CENTRAL_02",
+      "TrangThai": 1
+    },
+    "expected_status": 403,
+    "expected_message_contains": "Yêu cầu quyền [ADMIN_TOAN_BO]"
+  },
+  {
+    "test_case_name": "Bad - Admin Toàn Bộ tạo tài khoản thiếu dữ liệu",
+    "run_as": "admin_central",
+    "payload": {
+      "TenDangNhap": "",
+      "MatKhau": "",
+      "MaNV": "",
+      "TrangThai": 1
+    },
+    "expected_status": 400,
+    "expected_message_contains": "are required"
+  },
+  {
+    "test_case_name": "Bad - Admin Toàn Bộ cố tình truyền thêm trường Quyen",
+    "run_as": "admin_central",
+    "payload": {
+      "TenDangNhap": "admin_central_test3",
+      "MatKhau": "password123",
+      "MaNV": "NV_CENTRAL_03",
+      "TrangThai": 1,
+      "Quyen": "ADMIN_TOAN_BO"
+    },
+    "expected_status": 403,
+    "expected_message_contains": "không được phép tự chỉ định Quyền"
   }
 ]

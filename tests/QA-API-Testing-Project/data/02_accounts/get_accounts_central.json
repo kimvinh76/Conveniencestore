@@ -1,5 +1,26 @@
 [
   {
-    "test_case_name": "Tên kịch bản test"
+    "test_case_name": "Happy - Admin Toàn Bộ xem danh sách (Cho phép)",
+    "run_as": "admin_central",
+    "expected_status": 200,
+    "expected_array": true
+  },
+  {
+    "test_case_name": "Bad - Admin Chi Nhánh cố ý xem danh sách Central (Cấm)",
+    "run_as": "admin_branch_1",
+    "expected_status": 403,
+    "expected_array": false
+  },
+  {
+    "test_case_name": "Bad - Nhân viên cố ý xem danh sách Central (Cấm)",
+    "run_as": "nv_sales",
+    "expected_status": 403,
+    "expected_array": false
+  },
+  {
+    "test_case_name": "Bad - Chưa đăng nhập cố ý truy cập (Cấm)",
+    "run_as": "none",
+    "expected_status": 401,
+    "expected_array": false
   }
 ]

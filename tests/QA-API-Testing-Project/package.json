@@ -6,7 +6,9 @@
   "scripts": {
     "test:auth_login": "node runner.js 01_auth login",
     "test:auth_me": "node runner.js 01_auth me",
-    "test:auth_logout": "node runner.js 01_auth logout"
+    "test:auth_logout": "node runner.js 01_auth logout",
+    "test:acc_central": "node runner.js 02_accounts central",
+    "test:acc_branch": "node runner.js 02_accounts branch"
   },
   "dependencies": {
     "newman": "^6.1.2",

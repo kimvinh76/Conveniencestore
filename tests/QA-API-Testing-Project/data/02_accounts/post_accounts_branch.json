@@ -1,5 +1,63 @@
 [
   {
-    "test_case_name": "Tên kịch bản test"
+    "test_case_name": "Bad - Nhân viên không tồn tại",
+    "run_as": "admin_branch_1",
+    "payload": {
+      "TenDangNhap": "nv_HUE_test1",
+      "MatKhau": "password123",
+      "MaNV": "NV_KHONG_TON_TAI",
+      "ChiNhanh": "HUE"
+    },
+    "expected_status": 400,
+    "expected_message_contains": "Nhân viên không tồn tại"
+  },
+  {
+    "test_case_name": "Bad - Admin Chi Nhánh cố tạo tài khoản cho chi nhánh KHÁC",
+    "run_as": "admin_branch_1",
+    "payload": {
+      "TenDangNhap": "nv_SAIGON_test1",
+      "MatKhau": "password123",
+      "MaNV": "NV001_SG",
+      "ChiNhanh": "SAIGON"
+    },
+    "expected_status": 403,
+    "expected_message_contains": "không có quyền tạo tài khoản cho nhân viên của chi nhánh khác"
+  },
+  {
+    "test_case_name": "Bad - Nhân viên cố ý dùng API tạo tài khoản",
+    "run_as": "nv_sales",
+    "payload": {
+      "TenDangNhap": "nv_HUE_test2",
+      "MatKhau": "password123",
+      "MaNV": "NV002_HUE",
+      "ChiNhanh": "HUE"
+    },
+    "expected_status": 403,
+    "expected_message_contains": "Yêu cầu quyền [ADMIN_CHI_NHANH]"
+  },
+  {
+    "test_case_name": "Bad - Cố tình truyền thêm trường Quyen để hack quyền",
+    "run_as": "admin_branch_1",
+    "payload": {
+      "TenDangNhap": "nv_HUE_test3",
+      "MatKhau": "password123",
+      "MaNV": "NV003_HUE",
+      "ChiNhanh": "HUE",
+      "Quyen": "ADMIN_TOAN_BO"
+    },
+    "expected_status": 403,
+    "expected_message_contains": "không được phép tự chỉ định Quyền"
+  },
+  {
+    "test_case_name": "Bad - Thiếu dữ liệu bắt buộc",
+    "run_as": "admin_branch_1",
+    "payload": {
+      "TenDangNhap": "",
+      "MatKhau": "",
+      "MaNV": "",
+      "ChiNhanh": ""
+    },
+    "expected_status": 400,
+    "expected_message_contains": "are required"
   }
 ]

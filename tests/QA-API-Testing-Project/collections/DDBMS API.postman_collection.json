@@ -50,6 +50,24 @@
               "cookie": [],
               "body": ""
             }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// JS Script for GET /health/",
+                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                  "",
+                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                  "    pm.response.to.have.status(expectedStatus);",
+                  "});",
+                  ""
+                ]
+              }
+            }
           ]
         }
       ]
@@ -70,29 +88,31 @@
                       "listen": "test",
                       "script": {
                         "exec": [
-                          "  const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;\r",
-                          "  const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";\r",
-                          "\r",
-                          "  pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {\r",
-                          "      pm.response.to.have.status(expectedStatus);\r",
-                          "  });\r",
-                          "\r",
-                          "  pm.test(\"Thời gian phản hồi < 500ms\", function () {\r",
-                          "      pm.expect(pm.response.responseTime).to.be.below(500);\r",
-                          "  });\r",
-                          "\r",
-                          "  if (pm.response.code === 200) {\r",
-                          "      const jsonData = pm.response.json();\r",
-                          "      \r",
-                          "      pm.test(\"Dữ liệu trả về chứa object 'user'\", function () {\r",
-                          "          pm.expect(jsonData).to.have.property(\"user\");\r",
-                          "          pm.expect(jsonData.user).to.have.property(\"username\");\r",
-                          "      });\r",
-                          "      \r",
-                          "      pm.test(\"Đã nhận được Cookie bảo mật (HTTP-Only)\", function () {\r",
-                          "          pm.expect(pm.cookies.has(\"token\") || pm.cookies.has(\"auth_token\") || pm.response.headers.has(\"Set-Cookie\")).to.be.true;\r",
-                          "      });\r",
-                          "  }"
+                          "// JS Script for POST /api/auth/login",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "pm.test(\"Thời gian phản hồi < 500ms\", function () {",
+                          "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    const jsonData = pm.response.json();",
+                          "    ",
+                          "    pm.test(\"Dữ liệu trả về chứa object 'user'\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"user\");",
+                          "        pm.expect(jsonData.user).to.have.property(\"username\");",
+                          "    });",
+                          "    ",
+                          "    pm.test(\"Đã nhận được Cookie bảo mật (HTTP-Only)\", function () {",
+                          "        pm.expect(pm.cookies.has(\"token\") || pm.cookies.has(\"auth_token\") || pm.response.headers.has(\"Set-Cookie\")).to.be.true;",
+                          "    });",
+                          "}",
+                          ""
                         ],
                         "type": "text/javascript",
                         "packages": {},
@@ -340,20 +360,20 @@
                       "listen": "test",
                       "script": {
                         "exec": [
-                          "// JS Script for POST /api/auth/logout\r",
-                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;\r",
-                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";\r",
-                          "\r",
-                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {\r",
-                          "    pm.response.to.have.status(expectedStatus);\r",
-                          "});\r",
-                          "\r",
-                          "if (pm.response.code === 200) {\r",
-                          "    pm.test(\"Cookie đã được xóa bỏ hoàn toàn\", function () {\r",
-                          "        // Cookie thường bị xóa bằng cách gửi lại với giá trị rỗng hoặc Max-Age=0\r",
-                          "        pm.expect(pm.response.headers.has(\"Set-Cookie\")).to.be.true;\r",
-                          "    });\r",
-                          "}\r",
+                          "// JS Script for POST /api/auth/logout",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    pm.test(\"Cookie đã được xóa bỏ hoàn toàn\", function () {",
+                          "        // Cookie thường bị xóa bằng cách gửi lại với giá trị rỗng hoặc Max-Age=0",
+                          "        pm.expect(pm.response.headers.has(\"Set-Cookie\")).to.be.true;",
+                          "    });",
+                          "}",
                           ""
                         ],
                         "type": "text/javascript",
@@ -471,32 +491,32 @@
                       "listen": "test",
                       "script": {
                         "exec": [
-                          "// JS Script for GET /api/auth/me\r",
-                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;\r",
-                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";\r",
-                          "\r",
-                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {\r",
-                          "    pm.response.to.have.status(expectedStatus);\r",
-                          "});\r",
-                          "\r",
-                          "if (pm.response.code === 200) {\r",
-                          "    const expectedUsername = pm.iterationData.get(\"expected_username\");\r",
-                          "    const jsonData = pm.response.json();\r",
-                          "\r",
-                          "    pm.test(\"Profile trả về chứa object 'auth'\", function () {\r",
-                          "        pm.expect(jsonData).to.have.property(\"authenticated\", true);\r",
-                          "        pm.expect(jsonData).to.have.property(\"auth\");\r",
-                          "        // Kiểm tra vài field cơ bản trong auth (Tùy backend trả về, ví dụ MaNV, TenDangNhap)\r",
-                          "        pm.expect(jsonData.auth).to.be.an('object');\r",
-                          "    });\r",
-                          "} else if (pm.response.code === 401) {\r",
-                          "    pm.test(\"Mã lỗi trả về không cho phép truy cập\", function () {\r",
-                          "        const jsonData = pm.response.json();\r",
-                          "        pm.expect(jsonData).to.have.property(\"message\");\r",
-                          "    });\r",
-                          "}\r",
-                          "\r",
-                          "\r",
+                          "// JS Script for GET /api/auth/me",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    const expectedUsername = pm.iterationData.get(\"expected_username\");",
+                          "    const jsonData = pm.response.json();",
+                          "",
+                          "    pm.test(\"Profile trả về chứa object 'auth'\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"authenticated\", true);",
+                          "        pm.expect(jsonData).to.have.property(\"auth\");",
+                          "        // Kiểm tra vài field cơ bản trong auth (Tùy backend trả về, ví dụ MaNV, TenDangNhap)",
+                          "        pm.expect(jsonData.auth).to.be.an('object');",
+                          "    });",
+                          "} else if (pm.response.code === 401) {",
+                          "    pm.test(\"Mã lỗi trả về không cho phép truy cập\", function () {",
+                          "        const jsonData = pm.response.json();",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "}",
+                          "",
+                          "",
                           ""
                         ],
                         "type": "text/javascript",
@@ -815,6 +835,24 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/employees/all",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 }
               ]
@@ -1122,6 +1160,24 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for PUT /api/employees/{employeeId}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 },
                 {
@@ -1333,6 +1389,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for DELETE /api/employees/{employeeId}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -1778,6 +1852,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/employees/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -1932,6 +2024,24 @@
                           "header": [],
                           "cookie": [],
                           "body": ""
+                        }
+                      ],
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "type": "text/javascript",
+                            "exec": [
+                              "// JS Script for GET /api/invoices/{invoiceId}/details",
+                              "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                              "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                              "",
+                              "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                              "    pm.response.to.have.status(expectedStatus);",
+                              "});",
+                              ""
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2235,6 +2345,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/invoices/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -2518,6 +2646,24 @@
                           "cookie": [],
                           "body": ""
                         }
+                      ],
+                      "event": [
+                        {
+                          "listen": "test",
+                          "script": {
+                            "type": "text/javascript",
+                            "exec": [
+                              "// JS Script for PATCH /api/products/{productCode}/status",
+                              "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                              "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                              "",
+                              "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                              "    pm.response.to.have.status(expectedStatus);",
+                              "});",
+                              ""
+                            ]
+                          }
+                        }
                       ]
                     }
                   ]
@@ -2732,6 +2878,24 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/products/{productCode}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 },
                 {
@@ -2877,6 +3041,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for PUT /api/products/{productCode}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -3142,6 +3324,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/products/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -3323,6 +3523,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for GET /api/inventory/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -3498,6 +3716,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for GET /api/branch-dashboard",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -3651,6 +3887,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/revenue/national",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -3807,6 +4061,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/analytics/overview",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -4039,6 +4311,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/transfer-stock",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -4067,7 +4357,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -4331,6 +4621,133 @@
                               "cookie": [],
                               "body": ""
                             }
+                          ],
+                          "event": [
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            },
+                            {
+                              "listen": "test",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/central/:username/lock",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
                           ]
                         }
                       ]
@@ -4350,7 +4767,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -4614,6 +5031,133 @@
                               "cookie": [],
                               "body": ""
                             }
+                          ],
+                          "event": [
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            },
+                            {
+                              "listen": "test",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/central/:username/lock",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
                           ]
                         }
                       ]
@@ -4633,7 +5177,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -4897,6 +5441,133 @@
                               "cookie": [],
                               "body": ""
                             }
+                          ],
+                          "event": [
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            },
+                            {
+                              "listen": "test",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/central/:username/lock",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
                           ]
                         }
                       ]
@@ -4905,6 +5576,141 @@
                 },
                 {
                   "name": "/api/accounts/central",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "// =================================================================",
+                          "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                          "//",
+                          "// Cơ chế: ",
+                          "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                          "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                          "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                          "// ",
+                          "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                          "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                          "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                          "// =================================================================",
+                          "",
+                          "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                          "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                          "",
+                          "const accounts = {",
+                          "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                          "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                          "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                          "};",
+                          "",
+                          "if (runAs === \"none\") {",
+                          "    // Không đăng nhập -> gán Cookie rỗng",
+                          "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                          "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                          "} else if (runAs && accounts[runAs]) {",
+                          "    const creds = accounts[runAs];",
+                          "    const loginRequest = {",
+                          "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                          "        method: \"POST\",",
+                          "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                          "        body: {",
+                          "            mode: \"raw\",",
+                          "            raw: JSON.stringify(creds)",
+                          "        }",
+                          "    };",
+                          "",
+                          "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                          "    pm.sendRequest(loginRequest, function (err, res) {",
+                          "        if (err) {",
+                          "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                          "            return;",
+                          "        }",
+                          "",
+                          "        if (res.code === 200) {",
+                          "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                          "            ",
+                          "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                          "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                          "            if (setCookieHeader) {",
+                          "                // Tách lấy phần session=...",
+                          "                const cookieValue = setCookieHeader.split(';')[0];",
+                          "                ",
+                          "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                          "                pm.request.headers.upsert({",
+                          "                    key: \"Cookie\",",
+                          "                    value: cookieValue",
+                          "                });",
+                          "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                          "            } else {",
+                          "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                          "            }",
+                          "        } else {",
+                          "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                          "        }",
+                          "    });",
+                          "} else {",
+                          "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                          "}",
+                          "",
+                          "// PAYLOAD (BODY) CHO API POST/PATCH",
+                          "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                          "const payloadData = pm.iterationData.get(\"payload\");",
+                          "if (payloadData) {",
+                          "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                          "} else {",
+                          "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                          "    const manualPayload = pm.environment.get(\"request_payload\");",
+                          "    if (manualPayload) {",
+                          "        pm.variables.set(\"request_payload\", manualPayload);",
+                          "    }",
+                          "}",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/accounts/central",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "const expectedArray = pm.iterationData.get(\"expected_array\") === true;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    const jsonData = pm.response.json();",
+                          "    ",
+                          "    pm.test(\"Kiểm tra định dạng dữ liệu trả về\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"data\");",
+                          "        if (expectedArray) {",
+                          "            pm.expect(jsonData.data).to.be.an(\"array\");",
+                          "            if (jsonData.data.length > 0) {",
+                          "                // Kiểm tra cấu trúc của 1 tài khoản",
+                          "                pm.expect(jsonData.data[0]).to.have.property(\"TenDangNhap\");",
+                          "                pm.expect(jsonData.data[0]).to.have.property(\"Quyen\");",
+                          "                pm.expect(jsonData.data[0]).to.have.property(\"ChiNhanh\");",
+                          "            }",
+                          "        }",
+                          "    });",
+                          "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "}",
+                          ""
+                        ]
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -5021,6 +5827,130 @@
                 },
                 {
                   "name": "/api/accounts/central",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "// =================================================================",
+                          "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                          "//",
+                          "// Cơ chế: ",
+                          "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                          "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                          "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                          "// ",
+                          "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                          "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                          "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                          "// =================================================================",
+                          "",
+                          "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                          "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                          "",
+                          "const accounts = {",
+                          "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                          "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                          "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                          "};",
+                          "",
+                          "if (runAs === \"none\") {",
+                          "    // Không đăng nhập -> gán Cookie rỗng",
+                          "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                          "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                          "} else if (runAs && accounts[runAs]) {",
+                          "    const creds = accounts[runAs];",
+                          "    const loginRequest = {",
+                          "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                          "        method: \"POST\",",
+                          "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                          "        body: {",
+                          "            mode: \"raw\",",
+                          "            raw: JSON.stringify(creds)",
+                          "        }",
+                          "    };",
+                          "",
+                          "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                          "    pm.sendRequest(loginRequest, function (err, res) {",
+                          "        if (err) {",
+                          "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                          "            return;",
+                          "        }",
+                          "",
+                          "        if (res.code === 200) {",
+                          "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                          "            ",
+                          "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                          "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                          "            if (setCookieHeader) {",
+                          "                // Tách lấy phần session=...",
+                          "                const cookieValue = setCookieHeader.split(';')[0];",
+                          "                ",
+                          "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                          "                pm.request.headers.upsert({",
+                          "                    key: \"Cookie\",",
+                          "                    value: cookieValue",
+                          "                });",
+                          "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                          "            } else {",
+                          "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                          "            }",
+                          "        } else {",
+                          "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                          "        }",
+                          "    });",
+                          "} else {",
+                          "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                          "}",
+                          "",
+                          "// PAYLOAD (BODY) CHO API POST/PATCH",
+                          "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                          "const payloadData = pm.iterationData.get(\"payload\");",
+                          "if (payloadData) {",
+                          "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                          "} else {",
+                          "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                          "    const manualPayload = pm.environment.get(\"request_payload\");",
+                          "    if (manualPayload) {",
+                          "        pm.variables.set(\"request_payload\", manualPayload);",
+                          "    }",
+                          "}",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for POST /api/accounts/central",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 201;",
+                          "const expectedMessageContains = pm.iterationData.get(\"expected_message_contains\");",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "// Tất cả các response chuẩn từ BE (kể cả lỗi) đều trả về format { \"message\": \"...\" }",
+                          "if (pm.response.code !== 500) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Kiểm tra thông báo trả về (trường 'message')\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "        if (expectedMessageContains) {",
+                          "            pm.expect(jsonData.message).to.include(expectedMessageContains);",
+                          "        }",
+                          "    });",
+                          "}",
+                          ""
+                        ]
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "POST",
                     "header": [
@@ -5031,7 +5961,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"Quyen\": \"any\",\n  \"TenDangNhap\": \"any\",\n  \"MatKhau\": \"any\",\n  \"MaNV\": \"any\",\n  \"TrangThai\": \"any\"\n}",
+                      "raw": "{{request_payload}}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -5262,6 +6192,135 @@
                       "item": [
                         {
                           "name": "/api/accounts/branch/:username/lock",
+                          "event": [
+                            {
+                              "listen": "test",
+                              "script": {
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/branch/:username/lock",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ],
+                                "type": "text/javascript",
+                                "packages": {},
+                                "requests": {}
+                              }
+                            },
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
+                          ],
                           "request": {
                             "method": "PATCH",
                             "header": [
@@ -5272,7 +6331,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -5545,6 +6604,135 @@
                       "item": [
                         {
                           "name": "/api/accounts/branch/:username/unlock",
+                          "event": [
+                            {
+                              "listen": "test",
+                              "script": {
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/branch/:username/unlock",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ],
+                                "type": "text/javascript",
+                                "packages": {},
+                                "requests": {}
+                              }
+                            },
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
+                          ],
                           "request": {
                             "method": "PATCH",
                             "header": [
@@ -5555,7 +6743,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -5828,6 +7016,135 @@
                       "item": [
                         {
                           "name": "/api/accounts/branch/:username/reset-password",
+                          "event": [
+                            {
+                              "listen": "test",
+                              "script": {
+                                "exec": [
+                                  "// JS Script for PATCH /api/accounts/branch/:username/reset-password",
+                                  "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                                  "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                                  "",
+                                  "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                                  "    pm.response.to.have.status(expectedStatus);",
+                                  "});",
+                                  "",
+                                  "if (pm.response.code === 200) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"error\").or.to.have.property(\"message\");",
+                                  "    });",
+                                  "} else if (pm.response.code === 400) {",
+                                  "    const jsonData = pm.response.json();",
+                                  "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                                  "        pm.expect(jsonData).to.have.property(\"message\");",
+                                  "    });",
+                                  "}",
+                                  ""
+                                ],
+                                "type": "text/javascript",
+                                "packages": {},
+                                "requests": {}
+                              }
+                            },
+                            {
+                              "listen": "prerequest",
+                              "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                  "// =================================================================",
+                                  "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                                  "//",
+                                  "// Cơ chế: ",
+                                  "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                                  "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                                  "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                                  "// ",
+                                  "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                                  "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                                  "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                                  "// =================================================================",
+                                  "",
+                                  "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                                  "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                                  "",
+                                  "const accounts = {",
+                                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                                  "};",
+                                  "",
+                                  "if (runAs === \"none\") {",
+                                  "    // Không đăng nhập -> gán Cookie rỗng",
+                                  "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                                  "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                                  "} else if (runAs && accounts[runAs]) {",
+                                  "    const creds = accounts[runAs];",
+                                  "    const loginRequest = {",
+                                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                                  "        method: \"POST\",",
+                                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                                  "        body: {",
+                                  "            mode: \"raw\",",
+                                  "            raw: JSON.stringify(creds)",
+                                  "        }",
+                                  "    };",
+                                  "",
+                                  "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                                  "    pm.sendRequest(loginRequest, function (err, res) {",
+                                  "        if (err) {",
+                                  "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                                  "            return;",
+                                  "        }",
+                                  "",
+                                  "        if (res.code === 200) {",
+                                  "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                                  "            ",
+                                  "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                                  "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                                  "            if (setCookieHeader) {",
+                                  "                // Tách lấy phần session=...",
+                                  "                const cookieValue = setCookieHeader.split(';')[0];",
+                                  "                ",
+                                  "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                                  "                pm.request.headers.upsert({",
+                                  "                    key: \"Cookie\",",
+                                  "                    value: cookieValue",
+                                  "                });",
+                                  "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                                  "            } else {",
+                                  "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                                  "            }",
+                                  "        } else {",
+                                  "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                                  "        }",
+                                  "    });",
+                                  "} else {",
+                                  "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                                  "}",
+                                  "",
+                                  "// PAYLOAD (BODY) CHO API POST/PATCH",
+                                  "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                                  "const payloadData = pm.iterationData.get(\"payload\");",
+                                  "if (payloadData) {",
+                                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                                  "} else {",
+                                  "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                                  "    const manualPayload = pm.environment.get(\"request_payload\");",
+                                  "    if (manualPayload) {",
+                                  "        pm.variables.set(\"request_payload\", manualPayload);",
+                                  "    }",
+                                  "}",
+                                  ""
+                                ]
+                              }
+                            }
+                          ],
                           "request": {
                             "method": "PATCH",
                             "header": [
@@ -5838,7 +7155,7 @@
                             ],
                             "body": {
                               "mode": "raw",
-                              "raw": "{\n  \"branch\": \"any\"\n}",
+                              "raw": "{{request_payload}}",
                               "options": {
                                 "raw": {
                                   "headerFamily": "json",
@@ -6110,11 +7427,150 @@
                 },
                 {
                   "name": "/api/accounts/branch",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "// JS Script for GET /api/accounts/branch",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "const expectedArray = pm.iterationData.get(\"expected_array\") === true;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    const jsonData = pm.response.json();",
+                          "",
+                          "    pm.test(\"Kiểm tra định dạng dữ liệu trả về\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"data\");",
+                          "        if (expectedArray) {",
+                          "            pm.expect(jsonData.data).to.be.an(\"array\");",
+                          "            if (jsonData.data.length > 0) {",
+                          "                // Kiểm tra cấu trúc của 1 tài khoản",
+                          "                pm.expect(jsonData.data[0]).to.have.property(\"TenDangNhap\");",
+                          "                pm.expect(jsonData.data[0]).to.have.property(\"Quyen\");",
+                          "            }",
+                          "        }",
+                          "    });",
+                          "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "}",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "// =================================================================",
+                          "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                          "//",
+                          "// Cơ chế: ",
+                          "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                          "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                          "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                          "// ",
+                          "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                          "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                          "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                          "// =================================================================",
+                          "",
+                          "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                          "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                          "",
+                          "const accounts = {",
+                          "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                          "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                          "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                          "};",
+                          "",
+                          "if (runAs === \"none\") {",
+                          "    // Không đăng nhập -> gán Cookie rỗng",
+                          "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                          "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                          "} else if (runAs && accounts[runAs]) {",
+                          "    const creds = accounts[runAs];",
+                          "    const loginRequest = {",
+                          "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                          "        method: \"POST\",",
+                          "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                          "        body: {",
+                          "            mode: \"raw\",",
+                          "            raw: JSON.stringify(creds)",
+                          "        }",
+                          "    };",
+                          "",
+                          "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                          "    pm.sendRequest(loginRequest, function (err, res) {",
+                          "        if (err) {",
+                          "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                          "            return;",
+                          "        }",
+                          "",
+                          "        if (res.code === 200) {",
+                          "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                          "            ",
+                          "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                          "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                          "            if (setCookieHeader) {",
+                          "                // Tách lấy phần session=...",
+                          "                const cookieValue = setCookieHeader.split(';')[0];",
+                          "                ",
+                          "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                          "                pm.request.headers.upsert({",
+                          "                    key: \"Cookie\",",
+                          "                    value: cookieValue",
+                          "                });",
+                          "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                          "            } else {",
+                          "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                          "            }",
+                          "        } else {",
+                          "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                          "        }",
+                          "    });",
+                          "} else {",
+                          "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                          "}",
+                          "",
+                          "// PAYLOAD (BODY) CHO API POST/PATCH",
+                          "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                          "const payloadData = pm.iterationData.get(\"payload\");",
+                          "if (payloadData) {",
+                          "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                          "} else {",
+                          "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                          "    const manualPayload = pm.environment.get(\"request_payload\");",
+                          "    if (manualPayload) {",
+                          "        pm.variables.set(\"request_payload\", manualPayload);",
+                          "    }",
+                          "}",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "protocolProfileBehavior": {
+                    "disableCookies": false
+                  },
                   "request": {
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{baseUrl}}/api/accounts/branch?branch=string",
+                      "raw": "{{baseUrl}}/api/accounts/branch?branch={{branch_query}}",
                       "host": [
                         "{{baseUrl}}"
                       ],
@@ -6126,7 +7582,7 @@
                       "query": [
                         {
                           "key": "branch",
-                          "value": "string"
+                          "value": "{{branch_query}}"
                         }
                       ]
                     }
@@ -6286,6 +7742,130 @@
                 },
                 {
                   "name": "/api/accounts/branch",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "// JS Script for POST /api/accounts/branch",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 201;",
+                          "const expectedMessageContains = pm.iterationData.get(\"expected_message_contains\");",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "// Tất cả các response chuẩn từ BE (kể cả lỗi) đều trả về format { \"message\": \"...\" }",
+                          "if (pm.response.code !== 500) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Kiểm tra thông báo trả về (trường 'message' thay vì 'error')\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "        if (expectedMessageContains) {",
+                          "            pm.expect(jsonData.message).to.include(expectedMessageContains);",
+                          "        }",
+                          "    });",
+                          "}",
+                          ""
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// =================================================================",
+                          "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                          "//",
+                          "// Cơ chế: ",
+                          "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                          "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                          "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                          "// ",
+                          "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                          "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                          "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                          "// =================================================================",
+                          "",
+                          "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                          "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                          "",
+                          "const accounts = {",
+                          "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                          "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                          "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                          "};",
+                          "",
+                          "if (runAs === \"none\") {",
+                          "    // Không đăng nhập -> gán Cookie rỗng",
+                          "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                          "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                          "} else if (runAs && accounts[runAs]) {",
+                          "    const creds = accounts[runAs];",
+                          "    const loginRequest = {",
+                          "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                          "        method: \"POST\",",
+                          "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                          "        body: {",
+                          "            mode: \"raw\",",
+                          "            raw: JSON.stringify(creds)",
+                          "        }",
+                          "    };",
+                          "",
+                          "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                          "    pm.sendRequest(loginRequest, function (err, res) {",
+                          "        if (err) {",
+                          "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                          "            return;",
+                          "        }",
+                          "",
+                          "        if (res.code === 200) {",
+                          "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                          "            ",
+                          "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                          "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                          "            if (setCookieHeader) {",
+                          "                // Tách lấy phần session=...",
+                          "                const cookieValue = setCookieHeader.split(';')[0];",
+                          "                ",
+                          "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                          "                pm.request.headers.upsert({",
+                          "                    key: \"Cookie\",",
+                          "                    value: cookieValue",
+                          "                });",
+                          "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                          "            } else {",
+                          "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                          "            }",
+                          "        } else {",
+                          "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                          "        }",
+                          "    });",
+                          "} else {",
+                          "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                          "}",
+                          "",
+                          "// PAYLOAD (BODY) CHO API POST/PATCH",
+                          "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                          "const payloadData = pm.iterationData.get(\"payload\");",
+                          "if (payloadData) {",
+                          "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                          "} else {",
+                          "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                          "    const manualPayload = pm.environment.get(\"request_payload\");",
+                          "    if (manualPayload) {",
+                          "        pm.variables.set(\"request_payload\", manualPayload);",
+                          "    }",
+                          "}",
+                          ""
+                        ]
+                      }
+                    }
+                  ],
                   "request": {
                     "method": "POST",
                     "header": [
@@ -6296,7 +7876,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"Quyen\": \"any\",\n  \"TenDangNhap\": \"any\",\n  \"MatKhau\": \"any\",\n  \"MaNV\": \"any\",\n  \"ChiNhanh\": \"any\"\n}",
+                      "raw": "{{request_payload}}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -6531,7 +8111,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"oldPassword\": \"any\",\n  \"newPassword\": \"any\"\n}",
+                      "raw": "{{request_payload}}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -6708,9 +8288,209 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// =================================================================",
+                          "// GENERIC RBAC PRE-REQUEST SCRIPT - PHIÊN BẢN CHUẨN CHO CẢ POSTMAN & NEWMAN",
+                          "//",
+                          "// Cơ chế: ",
+                          "// - Gọi API Login ngầm bằng pm.sendRequest.",
+                          "// - Bắt trực tiếp Set-Cookie từ Response của lệnh Login.",
+                          "// - Inject (nhét) trực tiếp Cookie đó vào Header của Request chính (ở ngay bên trong callback).",
+                          "// ",
+                          "// Vì lệnh inject nằm TRONG callback, Postman/Newman sẽ chờ Login xong ",
+                          "// rồi mới gán Cookie, sau đó mới bắn Request chính -> Hoàn toàn KHÔNG bị delay 1 vòng!",
+                          "// Đặc biệt: Cách này bypass được lỗi Cookie Jar của Newman đối với localhost.",
+                          "// =================================================================",
+                          "",
+                          "// Lấy biến run_as từ file JSON (chạy Automation) HOẶC từ biến môi trường (chạy Manual từng API)",
+                          "const runAs = pm.iterationData.get(\"run_as\") || pm.environment.get(\"run_as\");",
+                          "",
+                          "const accounts = {",
+                          "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },",
+                          "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },",
+                          "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }",
+                          "};",
+                          "",
+                          "if (runAs === \"none\") {",
+                          "    // Không đăng nhập -> gán Cookie rỗng",
+                          "    pm.request.headers.upsert({ key: \"Cookie\", value: \"\" });",
+                          "    console.log(\"[PRE-REQ] Giả lập CHƯA đăng nhập.\");",
+                          "} else if (runAs && accounts[runAs]) {",
+                          "    const creds = accounts[runAs];",
+                          "    const loginRequest = {",
+                          "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",",
+                          "        method: \"POST\",",
+                          "        header: [{ key: \"Content-Type\", value: \"application/json\" }],",
+                          "        body: {",
+                          "            mode: \"raw\",",
+                          "            raw: JSON.stringify(creds)",
+                          "        }",
+                          "    };",
+                          "",
+                          "    // Postman/Newman sẽ ĐỢI hàm sendRequest này chạy xong mới bắn API chính",
+                          "    pm.sendRequest(loginRequest, function (err, res) {",
+                          "        if (err) {",
+                          "            console.log(`[PRE-REQ] Lỗi mạng khi login: ${err}`);",
+                          "            return;",
+                          "        }",
+                          "",
+                          "        if (res.code === 200) {",
+                          "            console.log(`[PRE-REQ] Login THÀNH CÔNG: ${runAs} (${creds.username})`);",
+                          "            ",
+                          "            // 1. Trích xuất Cookie trực tiếp từ Response Header",
+                          "            const setCookieHeader = res.headers.get(\"Set-Cookie\");",
+                          "            if (setCookieHeader) {",
+                          "                // Tách lấy phần session=...",
+                          "                const cookieValue = setCookieHeader.split(';')[0];",
+                          "                ",
+                          "                // 2. Ép thẳng Cookie vào Request chuẩn bị được gửi đi!",
+                          "                pm.request.headers.upsert({",
+                          "                    key: \"Cookie\",",
+                          "                    value: cookieValue",
+                          "                });",
+                          "                console.log(`[PRE-REQ] Đã tự động bơm Cookie vào Header.`);",
+                          "            } else {",
+                          "                console.log(`[PRE-REQ] Không nhận được Set-Cookie từ server.`);",
+                          "            }",
+                          "        } else {",
+                          "            console.log(`[PRE-REQ] Login THẤT BẠI. Status: ${res.code}`);",
+                          "        }",
+                          "    });",
+                          "} else {",
+                          "    console.log(`[PRE-REQ] Bỏ qua đăng nhập, run_as=\"${runAs}\" không hợp lệ. Gợi ý: Hãy tạo biến môi trường 'run_as' nếu bạn đang test thủ công.`);",
+                          "}",
+                          "",
+                          "// PAYLOAD (BODY) CHO API POST/PATCH",
+                          "// (Cũng ưu tiên lấy từ Data Driven trước, nếu không có thì lấy từ môi trường)",
+                          "const payloadData = pm.iterationData.get(\"payload\");",
+                          "if (payloadData) {",
+                          "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));",
+                          "} else {",
+                          "    // Khi test manual, nếu user truyền biến request_payload trong Environment thì dùng nó",
+                          "    const manualPayload = pm.environment.get(\"request_payload\");",
+                          "    if (manualPayload) {",
+                          "        pm.variables.set(\"request_payload\", manualPayload);",
+                          "    }",
+                          "}",
+                          ""
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for PATCH /api/accounts/change-password",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          "",
+                          "if (pm.response.code === 200) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Kiểm tra thông báo thành công\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "} else if (pm.response.code === 401 || pm.response.code === 403) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi phân quyền hoặc sai mật khẩu\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "} else if (pm.response.code === 400) {",
+                          "    const jsonData = pm.response.json();",
+                          "    pm.test(\"Mã lỗi trả về đúng chuẩn báo lỗi dữ liệu\", function () {",
+                          "        pm.expect(jsonData).to.have.property(\"message\");",
+                          "    });",
+                          "}",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 }
               ]
+            }
+          ],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  "const runAs = pm.iterationData.get(\"run_as\");\r",
+                  "\r",
+                  "const accounts = {\r",
+                  "    \"admin_central\":  { username: \"admin_central\",  password: \"123456\" },\r",
+                  "    \"admin_branch_1\": { username: \"admin_hue\",       password: \"123456\" },\r",
+                  "    \"nv_sales\":       { username: \"thu_ngan_hue\",    password: \"123456\" }\r",
+                  "};\r",
+                  "\r",
+                  "if (runAs === \"none\") {\r",
+                  "    // Xóa sạch cookie để test case \"chưa đăng nhập\"\r",
+                  "    const jar = pm.cookies.jar();\r",
+                  "    jar.clear(pm.collectionVariables.get(\"baseUrl\"), function() {\r",
+                  "        console.log(\"[PRE-REQ] Đã xóa cookie - giả lập CHƯA đăng nhập.\");\r",
+                  "    });\r",
+                  "\r",
+                  "} else if (runAs && accounts[runAs]) {\r",
+                  "    const creds = accounts[runAs];\r",
+                  "    const loginRequest = {\r",
+                  "        url: pm.collectionVariables.get(\"baseUrl\") + \"/api/auth/login\",\r",
+                  "        method: \"POST\",\r",
+                  "        header: [{ key: \"Content-Type\", value: \"application/json\" }],\r",
+                  "        body: {\r",
+                  "            mode: \"raw\",\r",
+                  "            raw: JSON.stringify(creds)\r",
+                  "        }\r",
+                  "    };\r",
+                  "\r",
+                  "    // Xóa cookie cũ trước, rồi login lại để lấy cookie mới\r",
+                  "    const jar = pm.cookies.jar();\r",
+                  "    jar.clear(pm.collectionVariables.get(\"baseUrl\"), function() {\r",
+                  "        pm.sendRequest(loginRequest, function(err, res) {\r",
+                  "            if (!err && res.code === 200) {\r",
+                  "                console.log(`[PRE-REQ] Đăng nhập thành công: ${runAs} (${creds.username})`);\r",
+                  "                // Cookie được set tự động vào Cookie Jar của Postman\r",
+                  "                // KHÔNG cần inject thủ công nữa\r",
+                  "            } else {\r",
+                  "                console.log(`[PRE-REQ] Đăng nhập THẤT BẠI cho ${runAs}. Status: ${res ? res.code : 'no response'}`);\r",
+                  "            }\r",
+                  "        });\r",
+                  "    });\r",
+                  "} else {\r",
+                  "    console.log(`[PRE-REQ] Cảnh báo: run_as=\"${runAs}\" không hợp lệ.`);\r",
+                  "}\r",
+                  "\r",
+                  "// PAYLOAD (BODY) CHO API POST/PATCH\r",
+                  "const payloadData = pm.iterationData.get(\"payload\");\r",
+                  "if (payloadData) {\r",
+                  "    pm.variables.set(\"request_payload\", JSON.stringify(payloadData));\r",
+                  "}\r",
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {},
+                "exec": [
+                  ""
+                ]
+              }
             }
           ]
         },
@@ -6893,6 +8673,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/purchase-receipts/{id}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -7233,6 +9031,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/purchase-receipts/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -7452,6 +9268,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for GET /api/suppliers/{id}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 },
@@ -7719,6 +9553,24 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for PUT /api/suppliers/{id}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 },
                 {
@@ -7930,6 +9782,24 @@
                       "header": [],
                       "cookie": [],
                       "body": ""
+                    }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for DELETE /api/suppliers/{id}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
                     }
                   ]
                 }
@@ -8309,6 +10179,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/suppliers/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -8568,6 +10456,24 @@
                       "cookie": [],
                       "body": ""
                     }
+                  ],
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "// JS Script for PUT /api/customers/{id}",
+                          "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                          "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                          "",
+                          "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                          "    pm.response.to.have.status(expectedStatus);",
+                          "});",
+                          ""
+                        ]
+                      }
+                    }
                   ]
                 }
               ]
@@ -8701,6 +10607,24 @@
                   "header": [],
                   "cookie": [],
                   "body": ""
+                }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for GET /api/customers/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
                 }
               ]
             },
@@ -8923,6 +10847,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for POST /api/customers/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -9020,6 +10962,24 @@
                   "cookie": [],
                   "body": ""
                 }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for GET /api/categories/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
+                }
               ]
             }
           ]
@@ -9116,6 +11076,24 @@
                   "header": [],
                   "cookie": [],
                   "body": ""
+                }
+              ],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// JS Script for GET /api/brands/",
+                      "const testCaseName = pm.iterationData.get(\"test_case_name\") || \"Test Case\";",
+                      "const expectedStatus = pm.iterationData.get(\"expected_status\") || 200;",
+                      "",
+                      "pm.test(`[${testCaseName}] - HTTP Status là ${expectedStatus}`, function () {",
+                      "    pm.response.to.have.status(expectedStatus);",
+                      "});",
+                      ""
+                    ]
+                  }
                 }
               ]
             }
