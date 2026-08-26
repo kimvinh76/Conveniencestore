@@ -30,6 +30,7 @@ export default function CentralLayout({ children }) {
     { id: "transfer", href: "/central/transfer", label: "Chuyển kho" },
     { id: "purchase-receipts", href: "/central/purchase-receipts", label: "Phiếu nhập kho" },
     { id: "accounts", href: "/central/accounts", label: "Tài khoản" },
+    { id: "promotions", href: "/central/promotions", label: "Khuyến mãi" },
   ];
 
   const activeItem = navItems.find((item) => {

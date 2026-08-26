@@ -18,6 +18,8 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [invoices, setInvoices] = useState([]);
   const [details, setDetails] = useState([]);
+  const [detailsPromos, setDetailsPromos] = useState([]);
+  const [detailsInvoiceInfo, setDetailsInvoiceInfo] = useState(null);
   const [detailsTitle, setDetailsTitle] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,8 @@ export default function Page() {
   const [searchInvoice, setSearchInvoice] = useState("");
   const [note, setNote] = useState("");
   const [checkoutError, setCheckoutError] = useState(null);
+  const [promos, setPromos] = useState([]);
+  const [diemSuDung, setDiemSuDung] = useState(0);
 
   const totalAmount = useMemo(() =>
     cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0),
@@ -118,7 +122,9 @@ export default function Page() {
         customerId: selectedCustomer?.customerId || null,
         items: cleanedItems, 
         totalAmount, 
-        note 
+        note,
+        promos: promos.map(p => p.MaKM),
+        diemSuDung: Number(diemSuDung) || 0
       };
       await apiFetch("/api/invoices", {
         method: "POST",
@@ -129,6 +135,8 @@ export default function Page() {
       showNotification("Tạo hóa đơn thành công!", "success");
       setCartItems([]);
       setNote("");
+      setPromos([]);
+      setDiemSuDung(0);
       setSelectedCustomer(null);
       loadInitialData(); // Load lại lịch sử
       setActiveTab("history"); // Tự động nhảy sang tab lịch sử để xem bill vừa tạo
@@ -141,7 +149,9 @@ export default function Page() {
     if (!row?.MaHD || !branch) return;
     try {
       const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=${branch}`);
-      const rawDetails = Array.isArray(data.data) ? data.data : data;
+      const rawDetails = data.data?.items || (Array.isArray(data.data) ? data.data : []);
+      const promosData = data.data?.promos || [];
+      
       const formattedDetails = rawDetails.map(d => ({
         "Mã HĐ": d.MaHD,
         "Sản phẩm": `${d.TenHang} (${d.MaSP})`,
@@ -150,6 +160,8 @@ export default function Page() {
         "Thành tiền": new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(d.ThanhTien)
       }));
       setDetails(formattedDetails);
+      setDetailsPromos(promosData);
+      setDetailsInvoiceInfo(row);
       const customerName = rawDetails.length > 0 && rawDetails[0].HoTenKhachHang ? rawDetails[0].HoTenKhachHang : "Khách vãng lai";
       setDetailsTitle(`${row.MaHD} - ${customerName}`);
       openDetailsModal();
@@ -212,6 +224,10 @@ export default function Page() {
               cashierName={cashierName}
               selectedCustomer={selectedCustomer}
               setSelectedCustomer={setSelectedCustomer}
+              promos={promos}
+              setPromos={setPromos}
+              diemSuDung={diemSuDung}
+              setDiemSuDung={setDiemSuDung}
             />
           </div>
         ) : (
@@ -229,6 +245,8 @@ export default function Page() {
         isOpen={isDetailsOpen}
         title={detailsTitle}
         details={details}
+        promos={detailsPromos}
+        invoiceInfo={detailsInvoiceInfo}
         onClose={closeDetailsModal}
       />
 
