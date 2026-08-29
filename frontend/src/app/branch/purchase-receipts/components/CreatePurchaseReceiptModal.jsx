@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "@/services/api";
 import { useToast } from "@/contexts/ToastContext";
 
-export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
+export default function CreatePurchaseReceiptModal({ branch, onClose, onSuccess }) {
   const showNotification = useToast();
   const [maPN, setMaPN] = useState("");
   const [ghiChu, setGhiChu] = useState("");
@@ -29,7 +29,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
     const fetchProducts = async () => {
       try {
         setLoadingProducts(true);
-        const data = await apiFetch("/api/products");
+        const data = await apiFetch(`/api/products?branch=${branch}`);
         setProducts(data);
       } catch (error) {
         showNotification("Không thể tải danh sách sản phẩm", "error");
@@ -39,7 +39,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
     };
     const fetchSuppliers = async () => {
       try {
-        const data = await apiFetch("/api/suppliers");
+        const data = await apiFetch(`/api/suppliers?branch=${branch}`);
         setSuppliers(data);
       } catch (error) {
         console.error("Không thể tải nhà cung cấp", error);
@@ -47,7 +47,7 @@ export default function CreatePurchaseReceiptModal({ onClose, onSuccess }) {
     };
     fetchProducts();
     fetchSuppliers();
-  }, []);
+  }, [branch]);
 
   const handleAddItem = (e) => {
     e.preventDefault();

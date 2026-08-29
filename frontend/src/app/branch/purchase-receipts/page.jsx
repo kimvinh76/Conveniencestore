@@ -5,8 +5,10 @@ import { useToast } from "@/contexts/ToastContext";
 import PurchaseReceiptsList from "./components/PurchaseReceiptsList";
 import PurchaseReceiptDetails from "./components/PurchaseReceiptDetails";
 import CreatePurchaseReceiptModal from "./components/CreatePurchaseReceiptModal";
+import { useBranch } from "@/hooks/useBranch";
 
 export default function PurchaseReceiptsPage() {
+  const { branch } = useBranch({ requireLocal: true });
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -70,6 +72,7 @@ export default function PurchaseReceiptsPage() {
 
       {isCreateModalOpen && (
         <CreatePurchaseReceiptModal
+          branch={branch}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
         />

@@ -116,6 +116,8 @@ BEGIN
         hd.TongTienThanhToan AS TongTien, 
         hd.TongTienGoc,
         hd.TongSoTienGiam,
+        hd.DiemDaDung,
+        hd.SoTienGiamTuDiem,
         COUNT(ctd.MaSP) AS SoMon,
         hd.GhiChu,
         hd.NgayTao,
@@ -130,7 +132,7 @@ BEGIN
     LEFT JOIN dbo.KhachHang kh ON kh.MaKH = hd.MaKH
     WHERE hd.ChiNhanh = @CurrentDBBranch OR DB_NAME() LIKE 'Central%'
     GROUP BY hd.MaHD, hd.GhiChu, hd.NgayTao, hd.ChiNhanh, hd.MaNV, hd.MaKH, 
-             hd.TongTienThanhToan, hd.TongTienGoc, hd.TongSoTienGiam
+             hd.TongTienThanhToan, hd.TongTienGoc, hd.TongSoTienGiam, hd.DiemDaDung, hd.SoTienGiamTuDiem
     ORDER BY hd.NgayTao DESC;
 END;
 GO
