@@ -29,7 +29,32 @@ async function createEmployee(branchCode, payload) {
     .input("Email", sql.VarChar(100), payload.Email || null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
     .execute(PROCS.create);
-  return rs.recordset[0] || null;
+    
+  const createdEmployee = rs.recordset[0] || null;
+
+  // Đồng bộ lên Central nếu tạo ở chi nhánh (Application-level sync)
+  if (branchCode !== "CENTRAL" && createdEmployee) {
+    try {
+      const centralPool = await getPool("CENTRAL");
+      await centralPool.request()
+        .input("MaNV", sql.VarChar(50), maNV)
+        .input("HoTen", sql.NVarChar(120), payload.HoTen)
+        .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
+        .input("Email", sql.VarChar(100), payload.Email || null)
+        .input("ChiNhanh", sql.VarChar(10), branchCode)
+        .query(`
+          IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
+          BEGIN
+            INSERT INTO NhanVien (MaNV, HoTen, ChucVu, Email, ChiNhanh)
+            VALUES (@MaNV, @HoTen, @ChucVu, @Email, @ChiNhanh);
+          END
+        `);
+    } catch (err) {
+      console.error(`[SYNC ERROR] Could not sync new employee ${maNV} to CENTRAL:`, err.message);
+    }
+  }
+
+  return createdEmployee;
 }
 
 async function updateEmployee(branchCode, maNV, payload) {
@@ -42,6 +67,28 @@ async function updateEmployee(branchCode, maNV, payload) {
     .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
     .execute(PROCS.update);
+    
+  // Đồng bộ lên Central
+  if (branchCode !== "CENTRAL") {
+    try {
+      const centralPool = await getPool("CENTRAL");
+      await centralPool.request()
+        .input("MaNV", sql.VarChar(50), maNV)
+        .input("HoTen", sql.NVarChar(120), payload.HoTen !== undefined ? payload.HoTen : null)
+        .input("ChucVu", sql.NVarChar(80), payload.ChucVu !== undefined ? payload.ChucVu : null)
+        .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
+        .query(`
+          UPDATE NhanVien
+          SET HoTen = COALESCE(@HoTen, HoTen),
+              ChucVu = COALESCE(@ChucVu, ChucVu),
+              Email = COALESCE(@Email, Email)
+          WHERE MaNV = @MaNV;
+        `);
+    } catch (err) {
+      console.error(`[SYNC ERROR] Could not sync update employee ${maNV} to CENTRAL:`, err.message);
+    }
+  }
+
   return rs.recordset[0];
 }
 
@@ -59,10 +106,22 @@ async function deleteEmployee(branchCode, maNV) {
     .input("ChiNhanh", sql.VarChar(10), branchCode)
     .execute(PROCS.delete);
 
-  // Đồng bộ khóa tài khoản trên Central (Ngoại trừ lỗi không tìm thấy tài khoản)
+  // Đồng bộ khóa tài khoản và xóa nhân viên trên Central
+  if (branchCode !== "CENTRAL") {
+    try {
+      const centralPool = await getPool("CENTRAL");
+      
+      // Xóa trên Central
+      await centralPool.request()
+        .input("MaNV", sql.VarChar(50), maNV)
+        .query("DELETE FROM NhanVien WHERE MaNV = @MaNV;");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Could not sync delete employee ${maNV} to CENTRAL:`, err.message);
+    }
+  }
+
   const accountService = require("./account-service");
   try {
-    // Phải tìm Tên đăng nhập (Username) dựa trên Mã NV trước khi khóa
     const centralPool = await getPool("CENTRAL");
     const accountLookup = await centralPool.request()
       .input("MaNV", sql.VarChar(50), maNV)

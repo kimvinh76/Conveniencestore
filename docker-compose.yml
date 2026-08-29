@@ -1,23 +1,65 @@
 services:
-  # 1. SQL Server Database (Central + 3 Branches)
-  database:
+  # 1. SQL Server - Central Node
+  sql-central:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: ddbms_sqlserver
+    container_name: ddbms_sql_central
     ports:
-      - "1433:1433"
+      - "1404:1433"
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=DDBMS@2026!
     volumes:
-      # Mount thư mục chứa file SQL để script đọc
       - ./database:/usr/config
-      # Mount script khởi tạo
       - ./docker-db-init:/usr/config/init
-    # Chạy script khởi tạo nền và bắt đầu sql server
     entrypoint: >
-      bash -c "cp /usr/config/init/init-db.sh /tmp/init-db.sh && sed -i 's/\r$$//' /tmp/init-db.sh && bash /tmp/init-db.sh & /opt/mssql/bin/sqlservr"
+      bash -c "cp /usr/config/init/init-central.sh /tmp/init-central.sh && sed -i 's/\r$$//' /tmp/init-central.sh && bash /tmp/init-central.sh & /opt/mssql/bin/sqlservr"
 
-  # 2. Node.js Backend
+  # 2. SQL Server - Hanoi Node
+  sql-hanoi:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ddbms_sql_hanoi
+    ports:
+      - "1403:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=DDBMS@2026!
+    volumes:
+      - ./database:/usr/config
+      - ./docker-db-init:/usr/config/init
+    entrypoint: >
+      bash -c "cp /usr/config/init/init-hanoi.sh /tmp/init-hanoi.sh && sed -i 's/\r$$//' /tmp/init-hanoi.sh && bash /tmp/init-hanoi.sh & /opt/mssql/bin/sqlservr"
+
+  # 3. SQL Server - Hue Node
+  sql-hue:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ddbms_sql_hue
+    ports:
+      - "1401:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=DDBMS@2026!
+    volumes:
+      - ./database:/usr/config
+      - ./docker-db-init:/usr/config/init
+    entrypoint: >
+      bash -c "cp /usr/config/init/init-hue.sh /tmp/init-hue.sh && sed -i 's/\r$$//' /tmp/init-hue.sh && bash /tmp/init-hue.sh & /opt/mssql/bin/sqlservr"
+
+  # 4. SQL Server - Saigon Node
+  sql-saigon:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ddbms_sql_saigon
+    ports:
+      - "1402:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=DDBMS@2026!
+    volumes:
+      - ./database:/usr/config
+      - ./docker-db-init:/usr/config/init
+    entrypoint: >
+      bash -c "cp /usr/config/init/init-saigon.sh /tmp/init-saigon.sh && sed -i 's/\r$$//' /tmp/init-saigon.sh && bash /tmp/init-saigon.sh & /opt/mssql/bin/sqlservr"
+
+  # 5. Node.js Backend
   backend:
     build: ./backend
     container_name: ddbms_backend
@@ -31,37 +73,40 @@ services:
       - FRONTEND_ORIGIN=http://localhost:3000
 
       # CENTRAL DB
-      - CENTRAL_DB_HOST=database
+      - CENTRAL_DB_HOST=sql-central
       - CENTRAL_DB_PORT=1433
       - CENTRAL_DB_USER=sa
       - CENTRAL_DB_PASSWORD=DDBMS@2026!
       - CENTRAL_DB_NAME=CentralDB
 
       # HANOI DB
-      - HANOI_DB_HOST=database
+      - HANOI_DB_HOST=sql-hanoi
       - HANOI_DB_PORT=1433
       - HANOI_DB_USER=sa
       - HANOI_DB_PASSWORD=DDBMS@2026!
       - HANOI_DB_NAME=Store_HN
 
       # HUE DB
-      - HUE_DB_HOST=database
+      - HUE_DB_HOST=sql-hue
       - HUE_DB_PORT=1433
       - HUE_DB_USER=sa
       - HUE_DB_PASSWORD=DDBMS@2026!
       - HUE_DB_NAME=Store_H
 
       # SAIGON DB
-      - SAIGON_DB_HOST=database
+      - SAIGON_DB_HOST=sql-saigon
       - SAIGON_DB_PORT=1433
       - SAIGON_DB_USER=sa
       - SAIGON_DB_PASSWORD=DDBMS@2026!
       - SAIGON_DB_NAME=Store_SG
 
     depends_on:
-      - database
+      - sql-central
+      - sql-hanoi
+      - sql-hue
+      - sql-saigon
 
-  # 3. Next.js Frontend
+  # 6. Next.js Frontend
   frontend:
     build: ./frontend
     container_name: ddbms_frontend
