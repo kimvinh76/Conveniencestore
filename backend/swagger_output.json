@@ -643,16 +643,19 @@
             "schema": {
               "type": "object",
               "properties": {
-                "fromBranch": {
-                  "example": "any"
-                },
-                "toBranch": {
+                "items": {
                   "example": "any"
                 },
                 "productCode": {
                   "example": "any"
                 },
                 "quantity": {
+                  "example": "any"
+                },
+                "fromBranch": {
+                  "example": "any"
+                },
+                "toBranch": {
                   "example": "any"
                 }
               }

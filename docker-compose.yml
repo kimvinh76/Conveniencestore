@@ -7,7 +7,8 @@ services:
       - "1404:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=DDBMS@2026!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
       - ./docker-db-init:/usr/config/init
@@ -22,7 +23,8 @@ services:
       - "1403:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=DDBMS@2026!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
       - ./docker-db-init:/usr/config/init
@@ -37,7 +39,8 @@ services:
       - "1401:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=DDBMS@2026!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
       - ./docker-db-init:/usr/config/init
@@ -52,7 +55,8 @@ services:
       - "1402:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=DDBMS@2026!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
       - ./docker-db-init:/usr/config/init
@@ -67,37 +71,46 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - JWT_SECRET=your_jwt_secret_key_here
+      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=8h
       - AUTH_COOKIE_NAME=ddbm_auth
       - FRONTEND_ORIGIN=http://localhost:3000
+      - TZ=Asia/Ho_Chi_Minh
+
+      # EMAIL CONFIG
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USER=kimvinh869@gmail.com
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM_NAME="Hệ thống Cửa hàng tiện lợi"
+      - EMAIL_FROM_ADDRESS=kimvinh869@gmail.com
 
       # CENTRAL DB
       - CENTRAL_DB_HOST=sql-central
       - CENTRAL_DB_PORT=1433
       - CENTRAL_DB_USER=sa
-      - CENTRAL_DB_PASSWORD=DDBMS@2026!
+      - CENTRAL_DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - CENTRAL_DB_NAME=CentralDB
 
       # HANOI DB
       - HANOI_DB_HOST=sql-hanoi
       - HANOI_DB_PORT=1433
       - HANOI_DB_USER=sa
-      - HANOI_DB_PASSWORD=DDBMS@2026!
+      - HANOI_DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - HANOI_DB_NAME=Store_HN
 
       # HUE DB
       - HUE_DB_HOST=sql-hue
       - HUE_DB_PORT=1433
       - HUE_DB_USER=sa
-      - HUE_DB_PASSWORD=DDBMS@2026!
+      - HUE_DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - HUE_DB_NAME=Store_H
 
       # SAIGON DB
       - SAIGON_DB_HOST=sql-saigon
       - SAIGON_DB_PORT=1433
       - SAIGON_DB_USER=sa
-      - SAIGON_DB_PASSWORD=DDBMS@2026!
+      - SAIGON_DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - SAIGON_DB_NAME=Store_SG
 
     depends_on:

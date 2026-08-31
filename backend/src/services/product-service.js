@@ -110,7 +110,7 @@ async function updateProduct(productCode, payload) {
     .input("MaDM", sql.VarChar(20), categoryCode || null)
     .input("MaTH", sql.VarChar(20), brandCode || null)
     .input("Barcode", sql.VarChar(50), barcode || null)
-    .input("TrangThai", sql.Int, active ? 1 : 0)
+    .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
     .execute(PROCS.update);
 
   const branches = ["HUE", "SAIGON", "HANOI"];
@@ -127,7 +127,7 @@ async function updateProduct(productCode, payload) {
         .input("MaDM", sql.VarChar(20), categoryCode || null)
         .input("MaTH", sql.VarChar(20), brandCode || null)
         .input("Barcode", sql.VarChar(50), barcode || null)
-        .input("TrangThai", sql.Int, active ? 1 : 0)
+        .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
         .query(`
           UPDATE dbo.HangHoa
           SET TenHang = COALESCE(NULLIF(LTRIM(RTRIM(@TenHang)), ''), TenHang),

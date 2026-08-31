@@ -17,15 +17,23 @@ async function searchCustomers(branch, query) {
 async function createCustomer(branch, data) {
   // Bỏ qua điểm tích lũy, hệ thống luôn khởi tạo = 0
   const { customerId, fullName, phoneNumber, branchId } = data;
-  const pool = await getPool(branch);
-  
-  await pool.request()
-    .input("MaKH", sql.VarChar(50), customerId)
-    .input("HoTen", sql.NVarChar(120), fullName)
-    .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
-    .input("ChiNhanhDK", sql.VarChar(10), branchId)
-    .execute(PROCS.create);
-    
+  const ALL_BRANCHES = ["CENTRAL", "HUE", "SAIGON", "HANOI"];
+
+  for (const b of ALL_BRANCHES) {
+    try {
+      const pool = await getPool(b);
+      await pool.request()
+        .input("MaKH", sql.VarChar(50), customerId)
+        .input("HoTen", sql.NVarChar(120), fullName)
+        .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
+        .input("ChiNhanhDK", sql.VarChar(10), branchId)
+        .execute(PROCS.create);
+
+    } catch (err) {
+
+    }
+  }
+
   return { customerId, fullName, phoneNumber, branchId };
 }
 
@@ -33,13 +41,13 @@ async function updateCustomer(branch, customerId, data) {
   // KHÔNG có cập nhật điểm tích lũy ở đây!
   const { fullName, phoneNumber } = data;
   const pool = await getPool(branch);
-  
+
   await pool.request()
     .input("MaKH", sql.VarChar(50), customerId)
     .input("HoTen", sql.NVarChar(120), fullName)
     .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
     .execute(PROCS.update);
-    
+
   return { customerId, updated: true };
 }
 

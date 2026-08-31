@@ -23,13 +23,13 @@ async function listInventory(branch) {
 async function transferStockDistributed(payload) {
   if (isMockMode()) return mock.transferStock(payload);
   const pool = await getPool("CENTRAL"); // Transaction phân tán gọi từ Central
-  const { fromBranch, toBranch, productCode, quantity, nguoiChuyen } = payload;
+  const { fromBranch, toBranch, items, nguoiChuyen } = payload;
+  const itemsJson = JSON.stringify(items);
 
   await pool.request()
     .input("TuChiNhanh", sql.VarChar(10), fromBranch)
     .input("DenChiNhanh", sql.VarChar(10), toBranch)
-    .input("MaSP", sql.VarChar(50), productCode)
-    .input("SoLuongChuyen", sql.Int, quantity)
+    .input("ItemsJson", sql.NVarChar(sql.MAX), itemsJson)
     .input("NguoiChuyen", sql.VarChar(50), nguoiChuyen || 'SYSTEM')
     .execute(PROCS.transfer);
 
@@ -37,8 +37,7 @@ async function transferStockDistributed(payload) {
     status: "SUCCESS",
     fromBranch,
     toBranch,
-    productCode,
-    quantity,
+    items,
     nguoiChuyen,
     timestamp: new Date().toISOString()
   };

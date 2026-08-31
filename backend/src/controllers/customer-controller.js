@@ -18,8 +18,12 @@ async function createCustomer(req, res, next) {
     // Yêu cầu branchId để biết khách được đăng ký ở đâu, default là branch hiện tại nếu là chi nhánh
     let { customerId, fullName, phoneNumber, branchId } = req.body;
     
+    if (branch === "CENTRAL") {
+       return res.status(400).json({ success: false, message: "Hệ thống chỉ cho phép đăng ký khách hàng tại các chi nhánh cửa hàng." });
+    }
+    
     if (!branchId) {
-       branchId = branch === "CENTRAL" ? "CENTRAL" : branch; // Mặc định nếu thiếu
+       branchId = branch;
     }
 
     if (!customerId || !fullName) {

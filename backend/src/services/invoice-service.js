@@ -6,15 +6,8 @@ const PROCS = {
   create: "dbo.usp_Local_TaoHoaDonNhieuDong"
 };
 
-const formatDate = (dateVal) => {
-  if (!dateVal) return "";
-  const d = new Date(dateVal);
-  if (isNaN(d.getTime())) return dateVal;
-  const pad = (n) => String(n).padStart(2, "0");
-  const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  return `${dateStr} ${timeStr}`;
-};
+// Date formatting moved to frontend
+
 
 async function listInvoicesByBranch(branch) {
 
@@ -22,7 +15,8 @@ async function listInvoicesByBranch(branch) {
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   const rows = result.recordset || [];
-  return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
+
+  return rows;
 }
 
 
@@ -31,7 +25,7 @@ async function getInvoiceDetails(branch, invoiceId) {
   const result = await pool.request()
     .input("MaHD", sql.VarChar(50), invoiceId)
     .execute(PROCS.details);
-  
+
   // Store mới usp_Local_ChiTietHoaDon trả về 2 kết quả (Multiple Recordsets)
   // - result.recordsets[0]: Chứa danh sách các món hàng (Chi tiết hóa đơn)
   // - result.recordsets[1]: Chứa danh sách các mã khuyến mãi đã được áp dụng cho hóa đơn này
