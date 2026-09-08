@@ -26,19 +26,21 @@ exports.createAccount = async (req, res) => {
       return res.status(403).json({ message: "Cảnh báo bảo mật: Bạn không được phép tự chỉ định Quyền! Hệ thống sẽ tự động cấp quyền dựa trên chức vụ nhân viên." });
     }
 
-    // Lấy chức vụ từ DB Central để tự động gán Quyền
+    // Lấy chức vụ và ChiNhanh từ DB Central để tự động gán Quyền và phân mảnh
     const pool = await getPool("CENTRAL");
-    const empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu FROM dbo.NhanVien WHERE MaNV = @MaNV");
+    const empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu, ChiNhanh FROM dbo.NhanVien WHERE MaNV = @MaNV");
 
     let assignedRole = "NHAN_VIEN";
+    let chiNhanh = null;
     if (empResult.recordset.length > 0) {
       const title = empResult.recordset[0].ChucVu;
+      chiNhanh = empResult.recordset[0].ChiNhanh;
       if (title === "Quản trị hệ thống") assignedRole = "ADMIN_TOAN_BO";
       if (title === "Quản lý chi nhánh") assignedRole = "ADMIN_CHI_NHANH";
     }
 
     // ADMIN_TOAN_BO được quyền tạo bất kỳ quyền nào, hệ thống tự ánh xạ
-    const data = await accountService.createAccount({ TenDangNhap, MatKhau, MaNV, Quyen: assignedRole, TrangThai });
+    const data = await accountService.createAccount({ TenDangNhap, MatKhau, MaNV, Quyen: assignedRole, TrangThai, ChiNhanh: chiNhanh });
     res.status(201).json({ message: `Account created with auto-mapped role ${assignedRole}`, data });
   } catch (error) {
     // Bắt lỗi Custom ném ra từ Stored Procedure (THROW 50000, 50001, 50002, 50003...)
@@ -164,7 +166,8 @@ exports.createBranchAccount = async (req, res) => {
       MatKhau,
       MaNV,
       Quyen: assignedRole,
-      TrangThai: 1
+      TrangThai: 1,
+      ChiNhanh
     });
 
     res.status(201).json({ message: `Branch account created with role ${assignedRole}`, data });

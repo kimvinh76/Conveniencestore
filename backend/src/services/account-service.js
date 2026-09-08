@@ -14,7 +14,7 @@ async function listAllAccountsFromCentral() {
 
 /**
  * Tạo tài khoản mới (INSERT vào CentralDB, replication sẽ đẩy xuống branch)
- * @param {Object} payload - { TenDangNhap, MatKhau, MaNV, Quyen, TrangThai }
+ * @param {Object} payload - { TenDangNhap, MatKhau, MaNV, Quyen, TrangThai, ChiNhanh }
  */
 async function createAccount(payload) {
   const pool = await getPool("CENTRAL");
@@ -29,6 +29,30 @@ async function createAccount(payload) {
     .input("Quyen", sql.NVarChar(50), payload.Quyen)
     .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : 1)
     .execute("dbo.usp_Central_ThemTaiKhoan");
+    
+  // --- REPLICATION TO BRANCH DB ---
+  if (payload.ChiNhanh) {
+    try {
+      const branchPool = await getPool(payload.ChiNhanh);
+      await branchPool.request()
+        .input("TenDangNhap", sql.VarChar(50), payload.TenDangNhap)
+        .input("MatKhau", sql.VarChar(255), hashedPassword)
+        .input("MaNV", sql.VarChar(50), payload.MaNV)
+        .input("Quyen", sql.NVarChar(50), payload.Quyen)
+        .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : 1)
+        .query(`
+          IF NOT EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap)
+          BEGIN
+            INSERT INTO dbo.TaiKhoan (TenDangNhap, MatKhau, MaNV, Quyen, TrangThai)
+            VALUES (@TenDangNhap, @MatKhau, @MaNV, @Quyen, @TrangThai)
+          END
+        `);
+      console.log(`Replicated account ${payload.TenDangNhap} to branch ${payload.ChiNhanh}`);
+    } catch (err) {
+      console.error(`Failed to replicate account to ${payload.ChiNhanh}:`, err.message);
+    }
+  }
+
   return { TenDangNhap: payload.TenDangNhap, MaNV: payload.MaNV, Quyen: payload.Quyen };
 }
 
@@ -38,13 +62,20 @@ async function createAccount(payload) {
  * Khóa tài khoản (cả CENTRAL và linked branches)
  */
 async function lockAccount(username, branch) {
-  const pool = await getPool("CENTRAL");
-  await pool
-    .request()
+  // Bỏ qua SP bị lỗi do Linked Server, dùng manual sync
+  const centralPool = await getPool("CENTRAL");
+  await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
-    .input("ChiNhanh", sql.VarChar(10), branch)
-    .execute("dbo.usp_Central_KhoaTaiKhoan");
+    .query("UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap");
 
+  try {
+    const branchPool = await getPool(branch);
+    await branchPool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .query("UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap");
+  } catch (err) {
+    console.error(`[SYNC ERROR] Khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+  }
 
   return { TenDangNhap: username, TrangThai: 0 };
 }
@@ -53,13 +84,19 @@ async function lockAccount(username, branch) {
  * Mở khóa tài khoản (cả CENTRAL và linked branches)
  */
 async function unlockAccount(username, branch) {
-  const pool = await getPool("CENTRAL");
-  await pool
-    .request()
+  const centralPool = await getPool("CENTRAL");
+  await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
-    .input("ChiNhanh", sql.VarChar(10), branch)
-    .execute("dbo.usp_Central_MoKhoaTaiKhoan");
+    .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
 
+  try {
+    const branchPool = await getPool(branch);
+    await branchPool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
+  } catch (err) {
+    console.error(`[SYNC ERROR] Mở khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+  }
 
   return { TenDangNhap: username, TrangThai: 1 };
 }
@@ -71,13 +108,21 @@ async function resetPassword(username, newPassword, branch) {
   const { hashPassword } = require("./auth-service");
   const hashedNewPassword = await hashPassword(newPassword);
 
-  // Sử dụng Stored Procedure mới để cập nhật Central và đẩy xuống Branch qua Linked Server
   const centralPool = await getPool("CENTRAL");
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .input("ChiNhanh", sql.VarChar(10), branch)
-    .execute("dbo.usp_Central_DoiMatKhau");
+    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+  try {
+    const branchPool = await getPool(branch);
+    await branchPool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+  } catch (err) {
+    console.error(`[SYNC ERROR] Reset mật khẩu thất bại ở chi nhánh ${branch}:`, err.message);
+  }
 
   return { TenDangNhap: username };
 }
@@ -111,15 +156,23 @@ async function changeOwnPassword(username, oldPassword, newPassword) {
   const passwordOk = await verifyPassword(oldPassword, account.MatKhau);
   if (!passwordOk) throw new Error("Old password is incorrect");
 
-  // Hash mật khẩu mới và update qua Stored Procedure
   const hashedNewPassword = await hashPassword(newPassword);
-  const pool = await getPool("CENTRAL");
-  await pool
-    .request()
+  
+  const centralPool = await getPool("CENTRAL");
+  await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .input("ChiNhanh", sql.VarChar(10), account.ChiNhanh)
-    .execute("dbo.usp_Central_DoiMatKhau");
+    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+
+  try {
+    const branchPool = await getPool(account.ChiNhanh);
+    await branchPool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+  } catch (err) {
+    console.error(`[SYNC ERROR] Đổi mật khẩu thất bại ở chi nhánh ${account.ChiNhanh}:`, err.message);
+  }
 
   return { message: "Password changed successfully" };
 }
