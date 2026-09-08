@@ -42,13 +42,7 @@ async function createEmployee(branchCode, payload) {
         .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
         .input("Email", sql.VarChar(100), payload.Email || null)
         .input("ChiNhanh", sql.VarChar(10), branchCode)
-        .query(`
-          IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
-          BEGIN
-            INSERT INTO NhanVien (MaNV, HoTen, ChucVu, Email, ChiNhanh)
-            VALUES (@MaNV, @HoTen, @ChucVu, @Email, @ChiNhanh);
-          END
-        `);
+        .execute("dbo.usp_Central_DongBoThemNhanVien");
     } catch (err) {
       console.error(`[SYNC ERROR] Could not sync new employee ${maNV} to CENTRAL:`, err.message);
     }
@@ -77,13 +71,7 @@ async function updateEmployee(branchCode, maNV, payload) {
         .input("HoTen", sql.NVarChar(120), payload.HoTen !== undefined ? payload.HoTen : null)
         .input("ChucVu", sql.NVarChar(80), payload.ChucVu !== undefined ? payload.ChucVu : null)
         .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
-        .query(`
-          UPDATE NhanVien
-          SET HoTen = COALESCE(@HoTen, HoTen),
-              ChucVu = COALESCE(@ChucVu, ChucVu),
-              Email = COALESCE(@Email, Email)
-          WHERE MaNV = @MaNV;
-        `);
+        .execute("dbo.usp_Central_DongBoCapNhatNhanVien");
     } catch (err) {
       console.error(`[SYNC ERROR] Could not sync update employee ${maNV} to CENTRAL:`, err.message);
     }
@@ -114,7 +102,7 @@ async function deleteEmployee(branchCode, maNV) {
       // Xóa trên Central
       await centralPool.request()
         .input("MaNV", sql.VarChar(50), maNV)
-        .query("DELETE FROM NhanVien WHERE MaNV = @MaNV;");
+        .execute("dbo.usp_Central_DongBoXoaNhanVien");
     } catch (err) {
       console.error(`[SYNC ERROR] Could not sync delete employee ${maNV} to CENTRAL:`, err.message);
     }

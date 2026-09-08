@@ -26,18 +26,27 @@ exports.createAccount = async (req, res) => {
       return res.status(403).json({ message: "Cảnh báo bảo mật: Bạn không được phép tự chỉ định Quyền! Hệ thống sẽ tự động cấp quyền dựa trên chức vụ nhân viên." });
     }
 
-    // Lấy chức vụ và ChiNhanh từ DB Central để tự động gán Quyền và phân mảnh
-    const pool = await getPool("CENTRAL");
-   
-    const  empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu, ChiNhanh FROM dbo.NhanVien WHERE MaNV = @MaNV");
-
+    // Lấy chức vụ và ChiNhanh (tìm trên CENTRAL và các Chi nhánh) để tự động gán Quyền và phân mảnh
     let assignedRole = "NHAN_VIEN";
     let chiNhanh = null;
-    if (empResult.recordset.length > 0) {
-      const title = empResult.recordset[0].ChucVu;
-      chiNhanh = empResult.recordset[0].ChiNhanh;
-      if (title === "Quản trị hệ thống") assignedRole = "ADMIN_TOAN_BO";
-      if (title === "Quản lý chi nhánh") assignedRole = "ADMIN_CHI_NHANH";
+
+    const BRANCHES = ["CENTRAL", "HANOI", "HUE", "SAIGON"];
+    for (const b of BRANCHES) {
+      try {
+        const bPool = await getPool(b);
+        const empResult = await bPool.request()
+          .input("MaNV", sql.VarChar(50), MaNV)
+          .query("SELECT ChucVu, ChiNhanh FROM dbo.NhanVien WHERE MaNV = @MaNV");
+        if (empResult.recordset && empResult.recordset.length > 0) {
+          const title = empResult.recordset[0].ChucVu;
+          chiNhanh = empResult.recordset[0].ChiNhanh || b;
+          if (title === "Quản trị hệ thống") assignedRole = "ADMIN_TOAN_BO";
+          if (title === "Quản lý chi nhánh") assignedRole = "ADMIN_CHI_NHANH";
+          break;
+        }
+      } catch (err) {
+        // ignore and check next branch
+      }
     }
 
     // ADMIN_TOAN_BO được quyền tạo bất kỳ quyền nào, hệ thống tự ánh xạ

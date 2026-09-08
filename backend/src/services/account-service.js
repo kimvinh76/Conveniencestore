@@ -7,31 +7,59 @@ const { sql, getPool } = require("../db/sqlserver");
  * Xem toàn bộ tài khoản từ CentralDB qua linked server.
  */
 async function listAllAccountsFromCentral() {
-  const pool = await getPool("CENTRAL");
-  const result = await pool.request().execute("dbo.usp_Central_DanhSachTaiKhoanToanBo");
-  return result.recordset;
+  const BRANCHES = ["CENTRAL", "HANOI", "HUE", "SAIGON"];
+  const accountsMap = new Map();
+
+  await Promise.all(
+    BRANCHES.map(async (branch) => {
+      try {
+        const pool = await getPool(branch);
+        const result = await pool.request().execute("dbo.usp_Local_DanhSachTaiKhoan");
+        const rows = result.recordset || [];
+        for (const row of rows) {
+          const acc = {
+            TenDangNhap: row.TenDangNhap,
+            MaNV: row.MaNV,
+            HoTen: row.HoTen,
+            Quyen: row.Quyen,
+            TrangThai: row.TrangThai,
+            ChiNhanh: row.ChiNhanh || branch
+          };
+          if (!accountsMap.has(acc.TenDangNhap)) {
+            accountsMap.set(acc.TenDangNhap, acc);
+          }
+        }
+      } catch (err) {
+        console.error(`[ACCOUNT SERVICE] Lỗi lấy danh sách tài khoản từ ${branch}:`, err.message);
+      }
+    })
+  );
+
+  return Array.from(accountsMap.values());
 }
 
 /**
- * Tạo tài khoản mới (INSERT vào CentralDB, replication sẽ đẩy xuống branch)
+ * Tạo tài khoản mới (Lưu vào CentralDB và đồng bộ xuống Chi nhánh)
  * @param {Object} payload - { TenDangNhap, MatKhau, MaNV, Quyen, TrangThai, ChiNhanh }
  */
 async function createAccount(payload) {
-  const pool = await getPool("CENTRAL");
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(payload.MatKhau, salt);
+  const trangThai = payload.TrangThai !== undefined ? (payload.TrangThai ? 1 : 0) : 1;
 
-  const rs = await pool
+  // 1. Thêm vào CENTRAL
+  const centralPool = await getPool("CENTRAL");
+  await centralPool
     .request()
     .input("TenDangNhap", sql.VarChar(50), payload.TenDangNhap)
     .input("MatKhau", sql.VarChar(255), hashedPassword)
     .input("MaNV", sql.VarChar(50), payload.MaNV)
     .input("Quyen", sql.NVarChar(50), payload.Quyen)
-    .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : 1)
-    .execute("dbo.usp_Central_ThemTaiKhoan");
+    .input("TrangThai", sql.Bit, trangThai)
+    .execute("dbo.usp_Chung_ThemTaiKhoan");
     
-  // --- REPLICATION TO BRANCH DB ---
-  if (payload.ChiNhanh) {
+  // 2. Đồng bộ xuống Branch DB
+  if (payload.ChiNhanh && payload.ChiNhanh !== "CENTRAL") {
     try {
       const branchPool = await getPool(payload.ChiNhanh);
       await branchPool.request()
@@ -39,17 +67,11 @@ async function createAccount(payload) {
         .input("MatKhau", sql.VarChar(255), hashedPassword)
         .input("MaNV", sql.VarChar(50), payload.MaNV)
         .input("Quyen", sql.NVarChar(50), payload.Quyen)
-        .input("TrangThai", sql.Bit, payload.TrangThai !== undefined ? payload.TrangThai : 1)
-        .query(`
-          IF NOT EXISTS (SELECT 1 FROM dbo.TaiKhoan WHERE TenDangNhap = @TenDangNhap)
-          BEGIN
-            INSERT INTO dbo.TaiKhoan (TenDangNhap, MatKhau, MaNV, Quyen, TrangThai)
-            VALUES (@TenDangNhap, @MatKhau, @MaNV, @Quyen, @TrangThai)
-          END
-        `);
-      console.log(`Replicated account ${payload.TenDangNhap} to branch ${payload.ChiNhanh}`);
+        .input("TrangThai", sql.Bit, trangThai)
+        .execute("dbo.usp_Chung_ThemTaiKhoan");
+      console.log(`[ACCOUNT SERVICE] Replicated account ${payload.TenDangNhap} to branch ${payload.ChiNhanh}`);
     } catch (err) {
-      console.error(`Failed to replicate account to ${payload.ChiNhanh}:`, err.message);
+      console.error(`[ACCOUNT SERVICE] Failed to replicate account to ${payload.ChiNhanh}:`, err.message);
     }
   }
 
@@ -66,15 +88,19 @@ async function lockAccount(username, branch) {
   const centralPool = await getPool("CENTRAL");
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
-    .query("UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap");
+    .input("TrangThai", sql.Bit, 0)
+    .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
 
-  try {
-    const branchPool = await getPool(branch);
-    await branchPool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .query("UPDATE dbo.TaiKhoan SET TrangThai = 0 WHERE TenDangNhap = @TenDangNhap");
-  } catch (err) {
-    console.error(`[SYNC ERROR] Khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+  if (branch && branch !== "CENTRAL") {
+    try {
+      const branchPool = await getPool(branch);
+      await branchPool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("TrangThai", sql.Bit, 0)
+        .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+    }
   }
 
   return { TenDangNhap: username, TrangThai: 0 };
@@ -87,15 +113,19 @@ async function unlockAccount(username, branch) {
   const centralPool = await getPool("CENTRAL");
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
-    .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
+    .input("TrangThai", sql.Bit, 1)
+    .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
 
-  try {
-    const branchPool = await getPool(branch);
-    await branchPool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .query("UPDATE dbo.TaiKhoan SET TrangThai = 1 WHERE TenDangNhap = @TenDangNhap");
-  } catch (err) {
-    console.error(`[SYNC ERROR] Mở khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+  if (branch && branch !== "CENTRAL") {
+    try {
+      const branchPool = await getPool(branch);
+      await branchPool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("TrangThai", sql.Bit, 1)
+        .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Mở khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
+    }
   }
 
   return { TenDangNhap: username, TrangThai: 1 };
@@ -112,16 +142,18 @@ async function resetPassword(username, newPassword, branch) {
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+    .execute("dbo.usp_Chung_CapNhatMatKhau");
 
-  try {
-    const branchPool = await getPool(branch);
-    await branchPool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-  } catch (err) {
-    console.error(`[SYNC ERROR] Reset mật khẩu thất bại ở chi nhánh ${branch}:`, err.message);
+  if (branch && branch !== "CENTRAL") {
+    try {
+      const branchPool = await getPool(branch);
+      await branchPool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+        .execute("dbo.usp_Chung_CapNhatMatKhau");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Reset mật khẩu thất bại ở chi nhánh ${branch}:`, err.message);
+    }
   }
 
   return { TenDangNhap: username };
@@ -162,16 +194,18 @@ async function changeOwnPassword(username, oldPassword, newPassword) {
   await centralPool.request()
     .input("TenDangNhap", sql.VarChar(50), username)
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-    .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
+    .execute("dbo.usp_Chung_CapNhatMatKhau");
 
-  try {
-    const branchPool = await getPool(account.ChiNhanh);
-    await branchPool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-      .query("UPDATE dbo.TaiKhoan SET MatKhau = @MatKhau WHERE TenDangNhap = @TenDangNhap");
-  } catch (err) {
-    console.error(`[SYNC ERROR] Đổi mật khẩu thất bại ở chi nhánh ${account.ChiNhanh}:`, err.message);
+  if (account.ChiNhanh && account.ChiNhanh !== "CENTRAL") {
+    try {
+      const branchPool = await getPool(account.ChiNhanh);
+      await branchPool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
+        .execute("dbo.usp_Chung_CapNhatMatKhau");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Đổi mật khẩu thất bại ở chi nhánh ${account.ChiNhanh}:`, err.message);
+    }
   }
 
   return { message: "Password changed successfully" };

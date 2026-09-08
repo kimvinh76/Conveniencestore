@@ -6,17 +6,23 @@ const PROCS = {
   create: "dbo.usp_Local_TaoHoaDonNhieuDong"
 };
 
-// Date formatting moved to frontend
-
+const formatInvoiceDate = (dateVal) => {
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return dateVal;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+};
 
 async function listInvoicesByBranch(branch) {
-
-
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   const rows = result.recordset || [];
 
-  return rows;
+  return rows.map(r => ({
+    ...r,
+    NgayTao: formatInvoiceDate(r.NgayTao)
+  }));
 }
 
 
@@ -70,6 +76,31 @@ async function createInvoice(payload) {
   request.input("DiemSuDung", sql.Int, diemSuDung || 0);
 
   await request.execute(PROCS.create);
+
+  // --- REPLICATION TO CENTRAL ---
+  if (branch !== "CENTRAL") {
+    try {
+      const centralPool = await getPool("CENTRAL");
+      const centralReq = centralPool.request()
+        .input("MaHD", sql.VarChar(50), maHD)
+        .input("MaNV", sql.VarChar(50), employeeId)
+        .input("MaKH", sql.VarChar(50), customerId || null)
+        .input("GhiChu", sql.NVarChar(255), note || "")
+        .input("ChiNhanhLap", sql.VarChar(10), branch)
+        .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(itemsPayload));
+
+      if (promos && promos.length > 0) {
+        centralReq.input("PromosJson", sql.NVarChar(sql.MAX), JSON.stringify(promos.map(km => ({ MaKM: km }))));
+      } else {
+        centralReq.input("PromosJson", sql.NVarChar(sql.MAX), null);
+      }
+      centralReq.input("DiemSuDung", sql.Int, diemSuDung || 0);
+
+      await centralReq.execute("dbo.usp_Central_DongBoHoaDon");
+    } catch (err) {
+      console.error(`[SYNC ERROR] Could not sync invoice ${maHD} to CENTRAL:`, err.message);
+    }
+  }
 
   return { maHD, branch, customerId, totalAmount: payload.totalAmount };
 }

@@ -22,15 +22,19 @@ async function createCustomer(branch, data) {
   for (const b of ALL_BRANCHES) {
     try {
       const pool = await getPool(b);
-      await pool.request()
+      const req = pool.request()
         .input("MaKH", sql.VarChar(50), customerId)
         .input("HoTen", sql.NVarChar(120), fullName)
         .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
-        .input("ChiNhanhDK", sql.VarChar(10), branchId)
-        .execute(PROCS.create);
-
+        .input("ChiNhanhDK", sql.VarChar(10), branchId);
+      
+      if (b === branch) {
+        await req.execute(PROCS.create); // Execute standard create on origin
+      } else {
+        await req.execute("dbo.usp_Branch_DongBoThemKhachHang"); // Sync to others
+      }
     } catch (err) {
-
+      console.error(`[SYNC ERROR] Could not sync customer ${customerId} to ${b}:`, err.message);
     }
   }
 
@@ -47,6 +51,23 @@ async function updateCustomer(branch, customerId, data) {
     .input("HoTen", sql.NVarChar(120), fullName)
     .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
     .execute(PROCS.update);
+
+  // Sync to other branches
+  const ALL_BRANCHES = ["CENTRAL", "HUE", "SAIGON", "HANOI"];
+  for (const b of ALL_BRANCHES) {
+    if (b !== branch) {
+      try {
+        const syncPool = await getPool(b);
+        await syncPool.request()
+          .input("MaKH", sql.VarChar(50), customerId)
+          .input("HoTen", sql.NVarChar(120), fullName)
+          .input("SoDienThoai", sql.VarChar(15), phoneNumber || null)
+          .execute("dbo.usp_Branch_DongBoCapNhatKhachHang");
+      } catch (err) {
+        console.error(`[SYNC ERROR] Could not sync customer update ${customerId} to ${b}:`, err.message);
+      }
+    }
+  }
 
   return { customerId, updated: true };
 }

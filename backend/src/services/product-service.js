@@ -62,7 +62,6 @@ async function createProduct(payload) {
   for (const branch of branches) {
     try {
       const poolBranch = await getPool(branch);
-      // Chèn bảng HangHoa
       await poolBranch.request()
         .input("MaSP", sql.VarChar(50), productCode)
         .input("TenHang", sql.NVarChar(100), productName)
@@ -70,23 +69,12 @@ async function createProduct(payload) {
         .input("MoTa", sql.NVarChar(500), description || null)
         .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
         .input("DonViTinh", sql.NVarChar(50), unit || null)
-        .input("TrangThai", sql.Int, 1)
         .input("MaDM", sql.VarChar(20), categoryCode || null)
         .input("MaTH", sql.VarChar(20), brandCode || null)
         .input("Barcode", sql.VarChar(50), barcode || null)
-        .query(`
-          INSERT INTO dbo.HangHoa (MaSP, TenHang, Gia, MoTa, AnhSanPham, DonViTinh, TrangThai, MaDM, MaTH, Barcode)
-          VALUES (@MaSP, @TenHang, @Gia, @MoTa, @AnhSanPham, @DonViTinh, @TrangThai, @MaDM, @MaTH, @Barcode);
-        `);
-      
-      // Chèn bảng TonKho (chỉ cho chi nhánh hiện tại)
-      await poolBranch.request()
-        .input("MaSP", sql.VarChar(50), productCode)
+        .input("TrangThai", sql.Int, 1)
         .input("ChiNhanh", sql.VarChar(10), branch)
-        .query(`
-          INSERT INTO dbo.TonKho (MaSP, SoLuongTon, ChiNhanh) 
-          VALUES (@MaSP, 0, @ChiNhanh);
-        `);
+        .execute("dbo.usp_Branch_DongBoThemHangHoa");
     } catch (err) {
       console.error(`[SYNC ERROR] Could not sync createProduct to ${branch}:`, err.message);
       // Lỗi đồng bộ có thể ghi log, nhưng không làm crash tiến trình tạo ở Central
@@ -128,19 +116,8 @@ async function updateProduct(productCode, payload) {
         .input("MaTH", sql.VarChar(20), brandCode || null)
         .input("Barcode", sql.VarChar(50), barcode || null)
         .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
-        .query(`
-          UPDATE dbo.HangHoa
-          SET TenHang = COALESCE(NULLIF(LTRIM(RTRIM(@TenHang)), ''), TenHang),
-              Gia = COALESCE(@Gia, Gia),
-              MoTa = COALESCE(@MoTa, MoTa),
-              AnhSanPham = COALESCE(@AnhSanPham, AnhSanPham),
-              DonViTinh = COALESCE(@DonViTinh, DonViTinh),
-              MaDM = COALESCE(@MaDM, MaDM),
-              MaTH = COALESCE(@MaTH, MaTH),
-              Barcode = COALESCE(@Barcode, Barcode),
-              TrangThai = COALESCE(@TrangThai, TrangThai)
-          WHERE MaSP = @MaSP;
-        `);
+        .input("ChiNhanh", sql.VarChar(10), branch)
+        .execute("dbo.usp_Branch_DongBoCapNhatHangHoa");
     } catch (err) {
       console.error(`[SYNC ERROR] Could not sync updateProduct to ${branch}:`, err.message);
     }
@@ -163,9 +140,7 @@ async function toggleProductStatus(productCode, active) {
         await pool.request()
           .input("MaSP", sql.VarChar(50), productCode)
           .input("TrangThai", sql.Int, active ? 1 : 0)
-          .query(`
-            UPDATE dbo.HangHoa SET TrangThai = @TrangThai WHERE MaSP = @MaSP;
-          `);
+          .execute("dbo.usp_Branch_DongBoCapNhatHangHoa");
       }
     } catch (err) {
       console.error(`[SYNC ERROR] Could not toggle status on ${branch}:`, err.message);
