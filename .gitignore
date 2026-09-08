@@ -47,3 +47,7 @@ tests/QA-API-Testing-Project/reports/*.json
 
 # Postman / Newman config
 tests/QA-API-Testing-Project/.newman/
+
+# Backup & Trash directories
+.backup/
+.trash/

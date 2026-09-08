@@ -28,7 +28,8 @@ exports.createAccount = async (req, res) => {
 
     // Lấy chức vụ và ChiNhanh từ DB Central để tự động gán Quyền và phân mảnh
     const pool = await getPool("CENTRAL");
-    const empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu, ChiNhanh FROM dbo.NhanVien WHERE MaNV = @MaNV");
+   
+    const  empResult = await pool.request().input("MaNV", sql.VarChar(50), MaNV).query("SELECT ChucVu, ChiNhanh FROM dbo.NhanVien WHERE MaNV = @MaNV");
 
     let assignedRole = "NHAN_VIEN";
     let chiNhanh = null;

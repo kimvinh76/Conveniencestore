@@ -11,7 +11,6 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
-      - ./docker-db-init:/usr/config/init
     entrypoint: >
       bash -c "cp /usr/config/init/init-central.sh /tmp/init-central.sh && sed -i 's/\r$$//' /tmp/init-central.sh && bash /tmp/init-central.sh & /opt/mssql/bin/sqlservr"
 
@@ -27,7 +26,6 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
-      - ./docker-db-init:/usr/config/init
     entrypoint: >
       bash -c "cp /usr/config/init/init-hanoi.sh /tmp/init-hanoi.sh && sed -i 's/\r$$//' /tmp/init-hanoi.sh && bash /tmp/init-hanoi.sh & /opt/mssql/bin/sqlservr"
 
@@ -43,7 +41,6 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
-      - ./docker-db-init:/usr/config/init
     entrypoint: >
       bash -c "cp /usr/config/init/init-hue.sh /tmp/init-hue.sh && sed -i 's/\r$$//' /tmp/init-hue.sh && bash /tmp/init-hue.sh & /opt/mssql/bin/sqlservr"
 
@@ -59,7 +56,6 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
-      - ./docker-db-init:/usr/config/init
     entrypoint: >
       bash -c "cp /usr/config/init/init-saigon.sh /tmp/init-saigon.sh && sed -i 's/\r$$//' /tmp/init-saigon.sh && bash /tmp/init-saigon.sh & /opt/mssql/bin/sqlservr"
 
