@@ -36,50 +36,15 @@ async function createReceipt(branch, data) {
     try {
       const centralPool = await getPool("CENTRAL");
       
-      // Compute TongTien
-      let tongTien = 0;
-      for (const it of data.items) {
-        tongTien += Number(it.quantity) * Number(it.price || 0);
-      }
-
-      // 1. Insert PhieuNhap
+      // Gọi Stored Procedure để lưu Phiếu Nhập và tự động CỘNG Tồn Kho tại Central
       await centralPool.request()
         .input("MaPN", mssql.VarChar(50), data.maPN)
-        .input("NgayNhap", mssql.DateTime, new Date())
-        .input("ChiNhanh", mssql.VarChar(10), branch)
-        .input("TongTien", mssql.Decimal(18,2), tongTien)
-        .input("GhiChu", mssql.NVarChar(255), data.ghiChu || "")
+        .input("ChiNhanhLap", mssql.VarChar(10), branch)
+        .input("GhiChu", mssql.NVarChar(255), data.ghiChu || null)
         .input("MaNCC", mssql.VarChar(50), data.maNCC || null)
-        .query(`
-          INSERT INTO PhieuNhap (MaPN, NgayNhap, ChiNhanh, TongTien, GhiChu, MaNCC)
-          VALUES (@MaPN, @NgayNhap, @ChiNhanh, @TongTien, @GhiChu, @MaNCC)
-        `);
-
-      // 2. Insert ChiTietPhieuNhap & Update TonKho
-      for (const it of data.items) {
-        await centralPool.request()
-          .input("MaPN", mssql.VarChar(50), data.maPN)
-          .input("MaSP", mssql.VarChar(50), it.productCode)
-          .input("SoLuong", mssql.Int, it.quantity)
-          .input("DonGiaNhap", mssql.Decimal(18,2), it.price || 0)
-          .query(`
-            INSERT INTO ChiTietPhieuNhap (MaPN, MaSP, SoLuong, DonGiaNhap)
-            VALUES (@MaPN, @MaSP, @SoLuong, @DonGiaNhap);
-            
-            IF EXISTS (SELECT 1 FROM TonKho WHERE MaSP = @MaSP AND ChiNhanh = '${branch}')
-            BEGIN
-              UPDATE TonKho 
-              SET SoLuongTon = SoLuongTon + @SoLuong 
-              WHERE MaSP = @MaSP AND ChiNhanh = '${branch}';
-            END
-            ELSE
-            BEGIN
-              INSERT INTO TonKho (MaSP, ChiNhanh, SoLuongTon)
-              VALUES (@MaSP, '${branch}', @SoLuong);
-            END
-          `);
-      }
-      
+        .input("ItemsJson", mssql.NVarChar(mssql.MAX), itemsJson)
+        .execute("dbo.usp_Central_DongBoPhieuNhap");
+        
       console.log(`Successfully replicated receipt ${data.maPN} to CentralDB`);
     } catch (err) {
       console.error(`Replication to Central failed for ${data.maPN}:`, err.message);

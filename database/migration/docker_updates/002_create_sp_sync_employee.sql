@@ -38,6 +38,18 @@ BEGIN
         ChucVu = COALESCE(@ChucVu, ChucVu),
         Email = COALESCE(@Email, Email)
     WHERE MaNV = @MaNV;
+
+    -- Đồng bộ quyền tài khoản nếu chức vụ thay đổi
+    IF @ChucVu IS NOT NULL
+    BEGIN
+        DECLARE @NewRole VARCHAR(20) = 'NHAN_VIEN';
+        IF LTRIM(RTRIM(@ChucVu)) = N'Quản trị hệ thống' SET @NewRole = 'ADMIN_TOAN_BO';
+        ELSE IF LTRIM(RTRIM(@ChucVu)) = N'Quản lý chi nhánh' SET @NewRole = 'ADMIN_CHI_NHANH';
+
+        UPDATE dbo.TaiKhoan 
+        SET Quyen = @NewRole
+        WHERE MaNV = @MaNV AND Quyen <> @NewRole;
+    END
 END;
 GO
 

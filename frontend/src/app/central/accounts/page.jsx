@@ -49,7 +49,7 @@ export default function Page() {
   }, []);
 
   const openAddModal = () => {
-    setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", Quyen: "NHAN_VIEN", TrangThai: 1 });
+    setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", TrangThai: 1 });
     openFormModal();
   };
 
@@ -66,7 +66,7 @@ export default function Page() {
       closeFormModal();
       loadAccounts();
     } catch (err) {
-      alert(`Lỗi: ${err.message || String(err)}`);
+      showToast(`Lỗi: ${err.message || String(err)}`, "error");
     }
   };
 
@@ -81,7 +81,7 @@ export default function Page() {
       });
       loadAccounts();
     } catch (err) {
-      alert(`Lỗi: ${err.message || String(err)}`);
+      showToast(`Lỗi: ${err.message || String(err)}`, "error");
     }
   };
 

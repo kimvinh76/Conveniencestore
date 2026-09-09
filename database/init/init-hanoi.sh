@@ -39,7 +39,7 @@ EXEC sp_addlinkedsrvlogin 'CENTRAL_SERVER', 'false', NULL, 'sa', '$MSSQL_SA_PASS
 EXEC sp_serveroption 'CENTRAL_SERVER', 'rpc out', 'true'; 
 "
 
-# 4. Quản lý Auto-Migration (Chạy các file update mới)
+# 4. Quản lý Auto-Migration (Chạy các file update mới theo cơ chế Checksum như Flyway)
 echo "Đang kiểm tra bảng _MigrationsHistory..."
 /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -Q "
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '_MigrationsHistory')
@@ -47,8 +47,14 @@ BEGIN
     CREATE TABLE [_MigrationsHistory] (
         MigrationId NVARCHAR(255) PRIMARY KEY,
         AppliedAt DATETIME DEFAULT GETDATE(),
-        Status NVARCHAR(50)
+        Status NVARCHAR(50),
+        Checksum VARCHAR(64) NULL
     );
+END
+ELSE
+BEGIN
+    IF COL_LENGTH('_MigrationsHistory', 'Checksum') IS NULL
+        ALTER TABLE [_MigrationsHistory] ADD [Checksum] VARCHAR(64) NULL;
 END
 "
 
@@ -57,15 +63,21 @@ if [ -d "$MIGRATION_DIR" ]; then
     echo "Quét thư mục migration: $MIGRATION_DIR..."
     for file in $(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | sort); do
         filename=$(basename "$file")
-        ALREADY_APPLIED=$(/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -h -1 -W -Q "SET NOCOUNT ON; SELECT 1 FROM [_MigrationsHistory] WHERE MigrationId = '$filename'")
+        CURRENT_CHECKSUM=$(md5sum "$file" | awk '{print $1}')
+        SAVED_CHECKSUM=$(/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -h -1 -W -Q "SET NOCOUNT ON; SELECT ISNULL([Checksum], '') FROM [_MigrationsHistory] WHERE MigrationId = '$filename'")
         
-        if [ "$ALREADY_APPLIED" == "1" ]; then
-            echo "  [Skip] Migration $filename đã chạy từ trước."
+        if [ "$SAVED_CHECKSUM" == "$CURRENT_CHECKSUM" ]; then
+            echo "  [Skip] Migration $filename không có thay đổi (Checksum khớp)."
         else
-            echo "  [Apply] Đang chạy migration: $filename..."
+            echo "  [Apply] Đang chạy migration: $filename (Checksum: $CURRENT_CHECKSUM)..."
             /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -i "$file"
             if [ $? -eq 0 ]; then
-                /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -Q "INSERT INTO [_MigrationsHistory] (MigrationId, Status) VALUES ('$filename', 'SUCCESS');"
+                /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$DB_NAME" -Q "
+                IF EXISTS (SELECT 1 FROM [_MigrationsHistory] WHERE MigrationId = '$filename')
+                    UPDATE [_MigrationsHistory] SET AppliedAt = GETDATE(), Status = 'SUCCESS', [Checksum] = '$CURRENT_CHECKSUM' WHERE MigrationId = '$filename';
+                ELSE
+                    INSERT INTO [_MigrationsHistory] (MigrationId, AppliedAt, Status, [Checksum]) VALUES ('$filename', GETDATE(), 'SUCCESS', '$CURRENT_CHECKSUM');
+                "
                 echo "  [Done] Đã cập nhật $filename thành công!"
             else
                 echo "  [Error] Lỗi khi chạy $filename!"

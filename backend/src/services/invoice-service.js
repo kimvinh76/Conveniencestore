@@ -102,6 +102,33 @@ async function createInvoice(payload) {
     }
   }
 
+  // --- REPLICATION OF CUSTOMER POINTS TO OTHER BRANCHES (P2P SYNC) ---
+  if (customerId) {
+    // Tính toán lượng điểm thay đổi: Điểm cộng (10k = 1đ) trừ đi Điểm sử dụng
+    const finalAmount = payload.totalAmount || 0;
+    const diemCong = Math.floor(finalAmount / 10000);
+    const diemThayDoi = diemCong - (diemSuDung || 0);
+
+    if (diemThayDoi !== 0) {
+      const ALL_BRANCHES = ["CENTRAL", "HUE", "SAIGON", "HANOI"];
+      for (const b of ALL_BRANCHES) {
+        // Bỏ qua chi nhánh lập hóa đơn (đã tự cập nhật local) 
+        // Bỏ qua CENTRAL (đã được cập nhật trong Store Đồng bộ Hóa đơn ở trên)
+        if (b !== branch && b !== "CENTRAL") {
+          try {
+            const syncPool = await getPool(b);
+            await syncPool.request()
+              .input("MaKH", sql.VarChar(50), customerId)
+              .input("DiemThayDoi", sql.Int, diemThayDoi)
+              .execute("dbo.usp_Branch_DongBoDiemKhachHang");
+          } catch (err) {
+            console.error(`[SYNC ERROR] Could not sync customer points for ${customerId} to branch ${b}:`, err.message);
+          }
+        }
+      }
+    }
+  }
+
   return { maHD, branch, customerId, totalAmount: payload.totalAmount };
 }
 

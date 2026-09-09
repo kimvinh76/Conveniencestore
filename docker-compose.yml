@@ -11,6 +11,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
+      - sql-central-data:/var/opt/mssql
     entrypoint: >
       bash -c "cp /usr/config/init/init-central.sh /tmp/init-central.sh && sed -i 's/\r$$//' /tmp/init-central.sh && bash /tmp/init-central.sh & /opt/mssql/bin/sqlservr"
 
@@ -26,6 +27,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
+      - sql-hanoi-data:/var/opt/mssql
     entrypoint: >
       bash -c "cp /usr/config/init/init-hanoi.sh /tmp/init-hanoi.sh && sed -i 's/\r$$//' /tmp/init-hanoi.sh && bash /tmp/init-hanoi.sh & /opt/mssql/bin/sqlservr"
 
@@ -41,6 +43,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
+      - sql-hue-data:/var/opt/mssql
     entrypoint: >
       bash -c "cp /usr/config/init/init-hue.sh /tmp/init-hue.sh && sed -i 's/\r$$//' /tmp/init-hue.sh && bash /tmp/init-hue.sh & /opt/mssql/bin/sqlservr"
 
@@ -56,6 +59,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./database:/usr/config
+      - sql-saigon-data:/var/opt/mssql
     entrypoint: >
       bash -c "cp /usr/config/init/init-saigon.sh /tmp/init-saigon.sh && sed -i 's/\r$$//' /tmp/init-saigon.sh && bash /tmp/init-saigon.sh & /opt/mssql/bin/sqlservr"
 
@@ -71,6 +75,7 @@ services:
       - JWT_EXPIRES_IN=8h
       - AUTH_COOKIE_NAME=ddbm_auth
       - FRONTEND_ORIGIN=http://localhost:3000
+      - DEFAULT_RESET_PASSWORD=${DEFAULT_RESET_PASSWORD:-123456}
       - TZ=Asia/Ho_Chi_Minh
 
       # EMAIL CONFIG
@@ -125,3 +130,10 @@ services:
       - NEXT_PUBLIC_API_BASE=http://localhost:3001
     depends_on:
       - backend
+
+# Named volumes — giữ data DB khi container bị xóa (docker compose down)
+volumes:
+  sql-central-data:
+  sql-hanoi-data:
+  sql-hue-data:
+  sql-saigon-data:
