@@ -1,5 +1,6 @@
 const { getPool } = require("../db/sqlserver");
 const mssql = require("mssql");
+const { publishEvent } = require("../utils/rabbitmq");
 
 async function getReceipts(branch) {
     const pool = await getPool(branch);
@@ -32,23 +33,17 @@ async function createReceipt(branch, data) {
       .input("ItemsJson", mssql.NVarChar, itemsJson)
       .execute("dbo.usp_Local_TaoPhieuNhapNhieuDong");
 
-    // --- REPLICATION TO CENTRALDB ---
-    try {
-      const centralPool = await getPool("CENTRAL");
-      
-      // Gọi Stored Procedure để lưu Phiếu Nhập và tự động CỘNG Tồn Kho tại Central
-      await centralPool.request()
-        .input("MaPN", mssql.VarChar(50), data.maPN)
-        .input("ChiNhanhLap", mssql.VarChar(10), branch)
-        .input("GhiChu", mssql.NVarChar(255), data.ghiChu || null)
-        .input("MaNCC", mssql.VarChar(50), data.maNCC || null)
-        .input("ItemsJson", mssql.NVarChar(mssql.MAX), itemsJson)
-        .execute("dbo.usp_Central_DongBoPhieuNhap");
-        
-      console.log(`Successfully replicated receipt ${data.maPN} to CentralDB`);
-    } catch (err) {
-      console.error(`Replication to Central failed for ${data.maPN}:`, err.message);
-    }
+    // --- REPLICATION TO CENTRALDB VIA MQ ---
+    await publishEvent("transaction_sync", {
+      event: "purchase_receipt.created",
+      branch,
+      data: {
+        maPN: data.maPN,
+        ghiChu: data.ghiChu || null,
+        maNCC: data.maNCC || null,
+        items: data.items
+      }
+    });
 
     return { message: "Tạo phiếu nhập thành công" };
 }

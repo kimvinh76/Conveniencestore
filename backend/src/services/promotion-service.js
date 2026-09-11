@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Central_DanhSachKhuyenMai",
@@ -50,29 +51,11 @@ async function createPromotion(payload) {
     .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? 1 : payload.TrangThai)
     .execute(PROCS.create);
 
-  // --- REPLICATION TO BRANCHES ---
-  const branches = ["HANOI", "HUE", "SAIGON"];
-  for (const b of branches) {
-    try {
-      const bPool = await getPool(b);
-      await bPool.request()
-        .input("MaKM", sql.VarChar(50), payload.MaKM)
-        .input("TenChuongTrinh", sql.NVarChar(150), payload.TenChuongTrinh)
-        .input("PhanTramGiam", sql.Int, payload.PhanTramGiam || 0)
-        .input("NgayBatDau", sql.DateTime2, payload.NgayBatDau)
-        .input("NgayKetThuc", sql.DateTime2, payload.NgayKetThuc)
-        .input("LoaiKhuyenMai", sql.VarChar(20), payload.LoaiKhuyenMai || "PERCENTAGE")
-        .input("SoTienGiamTrucTiep", sql.Decimal(15, 2), payload.SoTienGiamTrucTiep || 0)
-        .input("GiamToiDa", sql.Decimal(15, 2), payload.GiamToiDa || null)
-        .input("DonHangToiThieu", sql.Decimal(15, 2), payload.DonHangToiThieu || 0)
-        .input("SoLuongGioiHan", sql.Int, payload.SoLuongGioiHan || null)
-        .input("ChoPhepCongDon", sql.Bit, payload.ChoPhepCongDon === undefined ? 1 : payload.ChoPhepCongDon)
-        .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? 1 : payload.TrangThai)
-        .execute("dbo.usp_Chung_DongBoKhuyenMai");
-    } catch (err) {
-      console.error(`Sync promotion ${payload.MaKM} to ${b} failed:`, err.message);
-    }
-  }
+  // --- REPLICATION TO BRANCHES VIA MQ ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.created",
+    data: payload
+  });
 
   return payload;
 }
@@ -94,29 +77,11 @@ async function updatePromotion(promoCode, payload) {
     .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? null : payload.TrangThai)
     .execute(PROCS.update);
 
-  // --- REPLICATION TO BRANCHES ---
-  const branches = ["HANOI", "HUE", "SAIGON"];
-  for (const b of branches) {
-    try {
-      const bPool = await getPool(b);
-      await bPool.request()
-        .input("MaKM", sql.VarChar(50), promoCode)
-        .input("TenChuongTrinh", sql.NVarChar(150), payload.TenChuongTrinh || null)
-        .input("PhanTramGiam", sql.Int, payload.PhanTramGiam === undefined ? null : payload.PhanTramGiam)
-        .input("NgayBatDau", sql.DateTime2, payload.NgayBatDau || null)
-        .input("NgayKetThuc", sql.DateTime2, payload.NgayKetThuc || null)
-        .input("LoaiKhuyenMai", sql.VarChar(20), payload.LoaiKhuyenMai || null)
-        .input("SoTienGiamTrucTiep", sql.Decimal(15, 2), payload.SoTienGiamTrucTiep === undefined ? null : payload.SoTienGiamTrucTiep)
-        .input("GiamToiDa", sql.Decimal(15, 2), payload.GiamToiDa === undefined ? null : payload.GiamToiDa)
-        .input("DonHangToiThieu", sql.Decimal(15, 2), payload.DonHangToiThieu === undefined ? null : payload.DonHangToiThieu)
-        .input("SoLuongGioiHan", sql.Int, payload.SoLuongGioiHan === undefined ? null : payload.SoLuongGioiHan)
-        .input("ChoPhepCongDon", sql.Bit, payload.ChoPhepCongDon === undefined ? null : payload.ChoPhepCongDon)
-        .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? null : payload.TrangThai)
-        .execute("dbo.usp_Chung_DongBoKhuyenMai");
-    } catch (err) {
-      console.error(`Sync update promotion ${promoCode} to ${b} failed:`, err.message);
-    }
-  }
+  // --- REPLICATION TO BRANCHES VIA MQ ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.updated",
+    data: { maKM: promoCode, ...payload }
+  });
 
   return { MaKM: promoCode, updated: true };
 }
@@ -127,19 +92,11 @@ async function deletePromotion(promoCode) {
     .input("MaKM", sql.VarChar(50), promoCode)
     .execute(PROCS.delete);
 
-  // --- REPLICATION TO BRANCHES (Soft delete) ---
-  const branches = ["HANOI", "HUE", "SAIGON"];
-  for (const b of branches) {
-    try {
-      const bPool = await getPool(b);
-      await bPool.request()
-        .input("MaKM", sql.VarChar(50), promoCode)
-        .input("TrangThai", sql.Bit, 0) // Delete is just marking TrangThai = 0
-        .execute("dbo.usp_Chung_DongBoKhuyenMai");
-    } catch (err) {
-      console.error(`Sync delete promotion ${promoCode} to ${b} failed:`, err.message);
-    }
-  }
+  // --- REPLICATION TO BRANCHES VIA MQ (Soft delete) ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.status_toggled",
+    data: { maKM: promoCode, trangThai: false }
+  });
 
   return { MaKM: promoCode, deleted: true };
 }

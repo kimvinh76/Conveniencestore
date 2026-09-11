@@ -1,5 +1,6 @@
 const { sql, isMockMode, getPool } = require("../db/sqlserver");
 const mock = require("../data/mock-store");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachTonKho",
@@ -22,16 +23,20 @@ async function listInventory(branch) {
 
 async function transferStockDistributed(payload) {
   if (isMockMode()) return mock.transferStock(payload);
-  const pool = await getPool("CENTRAL"); // Transaction phân tán gọi từ Central
   const { fromBranch, toBranch, items, nguoiChuyen } = payload;
   const itemsJson = JSON.stringify(items);
-
-  await pool.request()
-    .input("TuChiNhanh", sql.VarChar(10), fromBranch)
-    .input("DenChiNhanh", sql.VarChar(10), toBranch)
-    .input("ItemsJson", sql.NVarChar(sql.MAX), itemsJson)
-    .input("NguoiChuyen", sql.VarChar(50), nguoiChuyen || 'SYSTEM')
-    .execute(PROCS.transfer);
+  
+  // We do NOT call `dbo.usp_Central_DieuChuyenKho` via Linked Server anymore.
+  // Instead, publish an event to MQ. The worker will handle executing local SPs on each DB.
+  await publishEvent("inventory_transfer", {
+    event: "inventory.transfer",
+    data: {
+      fromBranch,
+      toBranch,
+      itemsJson,
+      nguoiChuyen: nguoiChuyen || 'SYSTEM'
+    }
+  });
 
   return {
     status: "SUCCESS",

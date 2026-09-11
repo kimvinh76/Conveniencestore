@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Chung_DanhSachHangHoaKemTonKho",
@@ -56,30 +57,11 @@ async function createProduct(payload) {
     .input("Barcode", sql.VarChar(50), barcode || null)
     .execute(PROCS.create);
 
-  // 2. Đồng bộ sang các chi nhánh bằng câu lệnh INSERT trực tiếp
-  // (Vì các chi nhánh không có SP usp_Central_ThemHangHoaMoi)
-  const branches = ["HUE", "SAIGON", "HANOI"];
-  for (const branch of branches) {
-    try {
-      const poolBranch = await getPool(branch);
-      await poolBranch.request()
-        .input("MaSP", sql.VarChar(50), productCode)
-        .input("TenHang", sql.NVarChar(100), productName)
-        .input("Gia", sql.Decimal(10, 2), unitPrice)
-        .input("MoTa", sql.NVarChar(500), description || null)
-        .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
-        .input("DonViTinh", sql.NVarChar(50), unit || null)
-        .input("MaDM", sql.VarChar(20), categoryCode || null)
-        .input("MaTH", sql.VarChar(20), brandCode || null)
-        .input("Barcode", sql.VarChar(50), barcode || null)
-        .input("TrangThai", sql.Int, 1)
-        .input("ChiNhanh", sql.VarChar(10), branch)
-        .execute("dbo.usp_Branch_DongBoThemHangHoa");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Could not sync createProduct to ${branch}:`, err.message);
-      // Lỗi đồng bộ có thể ghi log, nhưng không làm crash tiến trình tạo ở Central
-    }
-  }
+  // 2. Publish event to Message Queue
+  await publishEvent("master_data_sync", {
+    event: "product.created",
+    data: payload
+  });
 
   return { productCode, productName, unitPrice, description, imageUrl, unit, categoryCode, brandCode, barcode };
 }
@@ -101,51 +83,26 @@ async function updateProduct(productCode, payload) {
     .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
     .execute(PROCS.update);
 
-  const branches = ["HUE", "SAIGON", "HANOI"];
-  for (const branch of branches) {
-    try {
-      const poolBranch = await getPool(branch);
-      await poolBranch.request()
-        .input("MaSP", sql.VarChar(50), productCode)
-        .input("TenHang", sql.NVarChar(100), productName)
-        .input("Gia", sql.Decimal(10, 2), unitPrice)
-        .input("MoTa", sql.NVarChar(500), description || null)
-        .input("AnhSanPham", sql.VarChar(255), imageUrl || null)
-        .input("DonViTinh", sql.NVarChar(50), unit || null)
-        .input("MaDM", sql.VarChar(20), categoryCode || null)
-        .input("MaTH", sql.VarChar(20), brandCode || null)
-        .input("Barcode", sql.VarChar(50), barcode || null)
-        .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
-        .input("ChiNhanh", sql.VarChar(10), branch)
-        .execute("dbo.usp_Branch_DongBoCapNhatHangHoa");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Could not sync updateProduct to ${branch}:`, err.message);
-    }
-  }
+  await publishEvent("master_data_sync", {
+    event: "product.updated",
+    data: { productCode, ...payload }
+  });
 
   return { productCode, ...payload };
 }
 
 async function toggleProductStatus(productCode, active) {
-  const branches = ["CENTRAL", "HUE", "SAIGON", "HANOI"];
-  for (const branch of branches) {
-    try {
-      const pool = await getPool(branch);
-      if (branch === "CENTRAL") {
-        await pool.request()
-          .input("MaSP", sql.VarChar(50), productCode)
-          .input("TrangThai", sql.Bit, active ? 1 : 0)
-          .execute(PROCS.update);
-      } else {
-        await pool.request()
-          .input("MaSP", sql.VarChar(50), productCode)
-          .input("TrangThai", sql.Int, active ? 1 : 0)
-          .execute("dbo.usp_Branch_DongBoCapNhatHangHoa");
-      }
-    } catch (err) {
-      console.error(`[SYNC ERROR] Could not toggle status on ${branch}:`, err.message);
-    }
-  }
+  const pool = await getPool("CENTRAL");
+  await pool.request()
+    .input("MaSP", sql.VarChar(50), productCode)
+    .input("TrangThai", sql.Bit, active ? 1 : 0)
+    .execute(PROCS.update);
+
+  await publishEvent("master_data_sync", {
+    event: "product.status_toggled",
+    data: { productCode, active }
+  });
+
   return { message: "Status updated" };
 }
 

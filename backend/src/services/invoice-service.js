@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachHoaDon",
@@ -79,53 +80,32 @@ async function createInvoice(payload) {
 
   // --- REPLICATION TO CENTRAL ---
   if (branch !== "CENTRAL") {
-    try {
-      const centralPool = await getPool("CENTRAL");
-      const centralReq = centralPool.request()
-        .input("MaHD", sql.VarChar(50), maHD)
-        .input("MaNV", sql.VarChar(50), employeeId)
-        .input("MaKH", sql.VarChar(50), customerId || null)
-        .input("GhiChu", sql.NVarChar(255), note || "")
-        .input("ChiNhanhLap", sql.VarChar(10), branch)
-        .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(itemsPayload));
-
-      if (promos && promos.length > 0) {
-        centralReq.input("PromosJson", sql.NVarChar(sql.MAX), JSON.stringify(promos.map(km => ({ MaKM: km }))));
-      } else {
-        centralReq.input("PromosJson", sql.NVarChar(sql.MAX), null);
+    await publishEvent("transaction_sync", {
+      event: "invoice.created",
+      branch,
+      data: {
+        maHD,
+        employeeId,
+        customerId: customerId || null,
+        note: note || "",
+        items: itemsPayload,
+        promos: promos || [],
+        diemSuDung: diemSuDung || 0
       }
-      centralReq.input("DiemSuDung", sql.Int, diemSuDung || 0);
-
-      await centralReq.execute("dbo.usp_Central_DongBoHoaDon");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Could not sync invoice ${maHD} to CENTRAL:`, err.message);
-    }
+    });
   }
 
-  // --- REPLICATION OF CUSTOMER POINTS TO OTHER BRANCHES (P2P SYNC) ---
+  // --- REPLICATION OF CUSTOMER POINTS TO OTHER BRANCHES (P2P SYNC VIA MQ) ---
   if (customerId) {
-    // Tính toán lượng điểm thay đổi: Điểm cộng (10k = 1đ) trừ đi Điểm sử dụng
     const finalAmount = payload.totalAmount || 0;
     const diemCong = Math.floor(finalAmount / 10000);
     const diemThayDoi = diemCong - (diemSuDung || 0);
 
     if (diemThayDoi !== 0) {
-      const ALL_BRANCHES = ["CENTRAL", "HUE", "SAIGON", "HANOI"];
-      for (const b of ALL_BRANCHES) {
-        // Bỏ qua chi nhánh lập hóa đơn (đã tự cập nhật local) 
-        // Bỏ qua CENTRAL (đã được cập nhật trong Store Đồng bộ Hóa đơn ở trên)
-        if (b !== branch && b !== "CENTRAL") {
-          try {
-            const syncPool = await getPool(b);
-            await syncPool.request()
-              .input("MaKH", sql.VarChar(50), customerId)
-              .input("DiemThayDoi", sql.Int, diemThayDoi)
-              .execute("dbo.usp_Branch_DongBoDiemKhachHang");
-          } catch (err) {
-            console.error(`[SYNC ERROR] Could not sync customer points for ${customerId} to branch ${b}:`, err.message);
-          }
-        }
-      }
+      await publishEvent("master_data_sync", {
+        event: "customer.points_updated",
+        data: { customerId, diemThayDoi }
+      });
     }
   }
 

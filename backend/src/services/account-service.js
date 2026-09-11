@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 // ========== HELPER FUNCTIONS ==========
 
@@ -106,21 +107,19 @@ async function createAccount(payload) {
     .input("TrangThai", sql.Bit, trangThai)
     .execute("dbo.usp_Chung_ThemTaiKhoan");
 
-  // 4. Đồng bộ xuống Branch DB (idempotent UPSERT)
+  // 4. Publish event to MQ for branch sync
   if (chiNhanh && chiNhanh !== "CENTRAL") {
-    try {
-      const branchPool = await getPool(chiNhanh);
-      await branchPool.request()
-        .input("TenDangNhap", sql.VarChar(50), payload.TenDangNhap)
-        .input("MatKhau", sql.VarChar(255), hashedPassword)
-        .input("MaNV", sql.VarChar(50), payload.MaNV)
-        .input("Quyen", sql.NVarChar(50), assignedRole)
-        .input("TrangThai", sql.Bit, trangThai)
-        .execute("dbo.usp_Chung_DongBoTaiKhoan");
-      console.log(`[ACCOUNT SERVICE] Replicated account ${payload.TenDangNhap} to branch ${chiNhanh}`);
-    } catch (err) {
-      console.error(`[ACCOUNT SERVICE] Failed to replicate account to ${chiNhanh}:`, err.message);
-    }
+    await publishEvent("master_data_sync", {
+      event: "account.created",
+      data: { 
+        TenDangNhap: payload.TenDangNhap, 
+        MatKhau: hashedPassword, 
+        MaNV: payload.MaNV, 
+        Quyen: assignedRole, 
+        TrangThai: trangThai,
+        ChiNhanh: chiNhanh 
+      }
+    });
   }
 
   return { TenDangNhap: payload.TenDangNhap, MaNV: payload.MaNV, Quyen: assignedRole };
@@ -138,17 +137,12 @@ async function lockAccount(username, branch) {
     .input("TrangThai", sql.Bit, 0)
     .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
 
-  // Sync xuống Branch
+  // Publish event to MQ
   if (branch && branch !== "CENTRAL") {
-    try {
-      const branchPool = await getPool(branch);
-      await branchPool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("TrangThai", sql.Bit, 0)
-        .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
-    }
+    await publishEvent("master_data_sync", {
+      event: "account.status_toggled",
+      data: { TenDangNhap: username, TrangThai: 0, ChiNhanh: branch }
+    });
   }
 
   return { TenDangNhap: username, TrangThai: 0 };
@@ -165,16 +159,12 @@ async function unlockAccount(username, branch) {
     .input("TrangThai", sql.Bit, 1)
     .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
 
+  // Publish event to MQ
   if (branch && branch !== "CENTRAL") {
-    try {
-      const branchPool = await getPool(branch);
-      await branchPool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("TrangThai", sql.Bit, 1)
-        .execute("dbo.usp_Chung_CapNhatTrangThaiTaiKhoan");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Mở khóa tài khoản thất bại ở chi nhánh ${branch}:`, err.message);
-    }
+    await publishEvent("master_data_sync", {
+      event: "account.status_toggled",
+      data: { TenDangNhap: username, TrangThai: 1, ChiNhanh: branch }
+    });
   }
 
   return { TenDangNhap: username, TrangThai: 1 };
@@ -193,16 +183,12 @@ async function resetPassword(username, newPassword, branch) {
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
     .execute("dbo.usp_Chung_CapNhatMatKhau");
 
+  // Publish event to MQ
   if (branch && branch !== "CENTRAL") {
-    try {
-      const branchPool = await getPool(branch);
-      await branchPool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-        .execute("dbo.usp_Chung_CapNhatMatKhau");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Reset mật khẩu thất bại ở chi nhánh ${branch}:`, err.message);
-    }
+    await publishEvent("master_data_sync", {
+      event: "account.password_reset",
+      data: { TenDangNhap: username, MatKhau: hashedNewPassword, ChiNhanh: branch }
+    });
   }
 
   return { TenDangNhap: username };
@@ -252,16 +238,12 @@ async function changeOwnPassword(username, oldPassword, newPassword) {
     .input("MatKhau", sql.VarChar(255), hashedNewPassword)
     .execute("dbo.usp_Chung_CapNhatMatKhau");
 
+  // Publish event to MQ
   if (account.ChiNhanh && account.ChiNhanh !== "CENTRAL") {
-    try {
-      const branchPool = await getPool(account.ChiNhanh);
-      await branchPool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .input("MatKhau", sql.VarChar(255), hashedNewPassword)
-        .execute("dbo.usp_Chung_CapNhatMatKhau");
-    } catch (err) {
-      console.error(`[SYNC ERROR] Đổi mật khẩu thất bại ở chi nhánh ${account.ChiNhanh}:`, err.message);
-    }
+    await publishEvent("master_data_sync", {
+      event: "account.password_reset",
+      data: { TenDangNhap: username, MatKhau: hashedNewPassword, ChiNhanh: account.ChiNhanh }
+    });
   }
 
   return { message: "Đổi mật khẩu thành công" };

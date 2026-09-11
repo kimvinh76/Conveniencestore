@@ -1,4 +1,17 @@
 services:
+  # 0. RabbitMQ - Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ddbms_rabbitmq
+    ports:
+      - "5672:5672"   # Cổng kết nối AMQP cho Node.js
+      - "15672:15672" # Cổng Dashboard UI quản lý
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
   # 1. SQL Server - Central Node
   sql-central:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -113,8 +126,11 @@ services:
       - SAIGON_DB_USER=sa
       - SAIGON_DB_PASSWORD=${MSSQL_SA_PASSWORD}
       - SAIGON_DB_NAME=Store_SG
+      # RABBITMQ
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 
     depends_on:
+      - rabbitmq
       - sql-central
       - sql-hanoi
       - sql-hue
@@ -137,3 +153,4 @@ volumes:
   sql-hanoi-data:
   sql-hue-data:
   sql-saigon-data:
+  rabbitmq-data:
