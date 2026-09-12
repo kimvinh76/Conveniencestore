@@ -20,8 +20,11 @@ export default function Page() {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiFetch(`/api/employees?branch=${branch}`);
-      setRows(Array.isArray(result.data) ? result.data : result);
+      // BẮT BUỘC TRUY VẤN TỪ CENTRAL DB ĐỂ PHẢN ÁNH ĐÚNG THỰC TRẠNG ĐỒNG BỘ
+      const result = await apiFetch(`/api/employees?branch=CENTRAL`);
+      const allEmployees = Array.isArray(result.data) ? result.data : result;
+      // Lọc ra nhân viên của chi nhánh được chọn
+      setRows(allEmployees.filter(emp => emp.ChiNhanh === branch));
     } catch (err) {
       setError(err.message || String(err));
     } finally {

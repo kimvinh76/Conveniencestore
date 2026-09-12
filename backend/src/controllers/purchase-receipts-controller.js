@@ -1,9 +1,10 @@
 const service = require("../services/purchase-receipts-service");
+const { normalizeBranch } = require("../config/branches");
 
 class PurchaseReceiptController {
   async listReceipts(req, res) {
     try {
-      const branch = req.query.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
       }
@@ -17,7 +18,7 @@ class PurchaseReceiptController {
 
   async getReceiptDetails(req, res) {
     try {
-      const branch = req.query.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       const maPN = req.params.id;
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
@@ -35,7 +36,7 @@ class PurchaseReceiptController {
 
   async createReceipt(req, res) {
     try {
-      const branch = req.body.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.body.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       const { maPN, ghiChu, maNCC, items } = req.body;
 
       if (!branch) {

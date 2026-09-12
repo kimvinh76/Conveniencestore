@@ -70,9 +70,12 @@ async function startSyncWorker() {
 
 async function processMasterDataEvent(payload) {
   const { event, data } = payload;
-  const targetBranches = ["HANOI", "HUE", "SAIGON"]; // Central is already written to
+  const origin = data.originBranch || data.branchCode || "CENTRAL";
+  const targetBranches = ["HANOI", "HUE", "SAIGON", "CENTRAL"];
 
   for (const branch of targetBranches) {
+    if (branch === origin) continue; // Skip origin
+    
     try {
       const pool = await getPool(branch);
       
@@ -218,30 +221,33 @@ async function processMasterDataEvent(payload) {
           
         // --- EMPLOYEE ---
         case "employee.created":
+          const procCreateEmp = branch === "CENTRAL" ? "dbo.usp_Central_ThemNhanVien" : "dbo.usp_Local_ThemNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
             .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute("dbo.usp_Local_ThemNhanVien"); // Branch uses its own local SP
+            .execute(procCreateEmp);
           break;
           
         case "employee.updated":
+          const procUpdateEmp = branch === "CENTRAL" ? "dbo.usp_Central_CapNhatNhanVien" : "dbo.usp_Local_CapNhatNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
-            .input("Email", sql.VarChar(100), data.email)
+            .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute("dbo.usp_Local_CapNhatNhanVien");
+            .execute(procUpdateEmp);
           break;
           
         case "employee.deleted":
+          const procDeleteEmp = branch === "CENTRAL" ? "dbo.usp_Central_XoaNhanVien" : "dbo.usp_Local_XoaNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute("dbo.usp_Local_XoaNhanVien");
+            .execute(procDeleteEmp);
           break;
 
         default:

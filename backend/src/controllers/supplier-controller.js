@@ -1,9 +1,10 @@
 const service = require("../services/supplier-service");
+const { normalizeBranch } = require("../config/branches");
 
 class SupplierController {
   async listSuppliers(req, res) {
     try {
-      const branch = req.query.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
       }
@@ -17,7 +18,7 @@ class SupplierController {
 
   async getSupplier(req, res) {
     try {
-      const branch = req.query.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
       }
@@ -34,7 +35,7 @@ class SupplierController {
 
   async createSupplier(req, res) {
     try {
-      const branch = req.body.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.body.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       const { maNCC, tenNCC, dienThoai, diaChi, email } = req.body;
 
       if (!branch) {
@@ -54,7 +55,7 @@ class SupplierController {
 
   async updateSupplier(req, res) {
     try {
-      const branch = req.body.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.body.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       const { tenNCC, dienThoai, diaChi, email } = req.body;
 
       if (!branch) {
@@ -74,7 +75,7 @@ class SupplierController {
 
   async deleteSupplier(req, res) {
     try {
-      const branch = req.query.branch || req.auth.branch || req.auth.chiNhanh;
+      const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || normalizeBranch(req.auth?.chiNhanh);
       if (!branch) {
         return res.status(400).json({ message: "Thiếu thông tin chi nhánh" });
       }

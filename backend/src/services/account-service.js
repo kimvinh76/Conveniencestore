@@ -46,35 +46,14 @@ async function resolveEmployeeRole(MaNV, targetBranch = null) {
  * Xem toàn bộ tài khoản từ tất cả các node (parallel fetch, dedup by TenDangNhap)
  */
 async function listAllAccountsFromCentral() {
-  const BRANCHES = ["CENTRAL", "HANOI", "HUE", "SAIGON"];
-  const accountsMap = new Map();
-
-  await Promise.all(
-    BRANCHES.map(async (branch) => {
-      try {
-        const pool = await getPool(branch);
-        const result = await pool.request().execute("dbo.usp_Local_DanhSachTaiKhoan");
-        const rows = result.recordset || [];
-        for (const row of rows) {
-          const acc = {
-            TenDangNhap: row.TenDangNhap,
-            MaNV: row.MaNV,
-            HoTen: row.HoTen,
-            Quyen: row.Quyen,
-            TrangThai: row.TrangThai,
-            ChiNhanh: row.ChiNhanh || branch
-          };
-          if (!accountsMap.has(acc.TenDangNhap)) {
-            accountsMap.set(acc.TenDangNhap, acc);
-          }
-        }
-      } catch (err) {
-        console.error(`[ACCOUNT SERVICE] Lỗi lấy danh sách tài khoản từ ${branch}:`, err.message);
-      }
-    })
-  );
-
-  return Array.from(accountsMap.values());
+  try {
+    const pool = await getPool("CENTRAL");
+    const result = await pool.request().execute("dbo.usp_Local_DanhSachTaiKhoan");
+    return result.recordset || [];
+  } catch (err) {
+    console.error(`[ACCOUNT SERVICE] Lỗi lấy danh sách tài khoản từ CENTRAL:`, err.message);
+    return [];
+  }
 }
 
 /**

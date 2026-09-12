@@ -13,10 +13,13 @@ export default function CentralPurchaseReceiptsPage() {
   const showNotification = useToast();
 
   const fetchReceipts = async (b = branch) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await apiFetch(`/api/purchase-receipts?branch=${b}`);
-      setReceipts(data);
+      // LUÔN LẤY TỪ CENTRAL ĐỂ KIỂM TRA ĐỒNG BỘ
+      const data = await apiFetch(`/api/purchase-receipts?branch=CENTRAL`);
+      const allReceipts = Array.isArray(data) ? data : (data?.data || []);
+      // Lọc theo chi nhánh
+      setReceipts(allReceipts.filter(r => r.ChiNhanhLap === b));
     } catch (error) {
       console.error(error);
       showNotification("Không thể tải danh sách phiếu nhập", "error");

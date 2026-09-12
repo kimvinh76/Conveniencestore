@@ -8,12 +8,10 @@ const PROCS = {
 };
 
 async function listInventory(branch) {
-
-
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   return result.recordset.map(row => ({
-    branch: branch,
+    branch: branch === "CENTRAL" ? row.ChiNhanh : branch,
     productCode: row.MaSP,
     quantity: Number(row.SoLuongTon || 0)
   }));

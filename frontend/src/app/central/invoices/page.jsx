@@ -24,8 +24,11 @@ export default function Page() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch(`/api/invoices?branch=${branch}`);
-      setInvoices(data.data || []);
+      // LUÔN LẤY TỪ CENTRAL ĐỂ KIỂM TRA ĐỒNG BỘ
+      const result = await apiFetch(`/api/invoices?branch=CENTRAL`);
+      const allInvoices = Array.isArray(result.data) ? result.data : result;
+      // Lọc hóa đơn theo chi nhánh được chọn
+      setInvoices(allInvoices.filter(inv => inv.ChiNhanh === branch));
     } catch (err) {
       setError(err.message || String(err));
     } finally {
@@ -40,7 +43,8 @@ export default function Page() {
   const openDetails = async (row) => {
     if (!row?.MaHD || !selectedBranch) return;
     try {
-      const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=${selectedBranch}`);
+      // Chi tiết hóa đơn cũng nên lấy từ Central
+      const data = await apiFetch(`/api/invoices/${encodeURIComponent(row.MaHD)}/details?branch=CENTRAL`);
       const rawDetails = data.data?.items || (Array.isArray(data.data) ? data.data : []);
       const promosData = data.data?.promos || [];
       const formattedDetails = rawDetails.map(d => ({
