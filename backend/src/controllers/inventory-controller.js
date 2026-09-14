@@ -24,11 +24,18 @@ exports.listInventory = async (req, res) => {
 
 exports.transferStock = async (req, res) => {
   try {
+    let items = req.body.items || [];
+    if (items.length === 0 && req.body.productCode) {
+      items.push({
+        productCode: String(req.body.productCode).trim(),
+        quantity: Number(req.body.quantity || 0)
+      });
+    }
+
     const payload = {
       fromBranch: normalizeBranch(req.body.fromBranch),
       toBranch: normalizeBranch(req.body.toBranch),
-      productCode: String(req.body.productCode || "").trim(),
-      quantity: Number(req.body.quantity || 0),
+      items: items,
       nguoiChuyen: req.auth?.username || "SYSTEM"
     };
     if (payload.fromBranch === payload.toBranch) {

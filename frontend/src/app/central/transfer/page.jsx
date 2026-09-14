@@ -9,15 +9,7 @@ export default function TransferPage() {
   const [loading, setLoading] = useState(false);
   const showNotification = useToast();
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    const payload = {
-      fromBranch: form.get("fromBranch"),
-      toBranch: form.get("toBranch"),
-      productCode: form.get("productCode"),
-      quantity: Number(form.get("quantity") || 0),
-    };
+  const onSubmit = async (payload) => {
     
     try {
       setLoading(true);

@@ -1,5 +1,6 @@
 const { getPool } = require("../db/sqlserver");
 const mssql = require("mssql");
+const { publishEvent } = require("../utils/rabbitmq");
 
 async function getReceipts(branch) {
     const pool = await getPool(branch);
@@ -31,6 +32,18 @@ async function createReceipt(branch, data) {
       .input("MaNCC", mssql.VarChar, data.maNCC || null)
       .input("ItemsJson", mssql.NVarChar, itemsJson)
       .execute("dbo.usp_Local_TaoPhieuNhapNhieuDong");
+
+    // --- REPLICATION TO CENTRALDB VIA MQ ---
+    await publishEvent("transaction_sync", {
+      event: "purchase_receipt.created",
+      branch,
+      data: {
+        maPN: data.maPN,
+        ghiChu: data.ghiChu || null,
+        maNCC: data.maNCC || null,
+        items: data.items
+      }
+    });
 
     return { message: "Tạo phiếu nhập thành công" };
 }

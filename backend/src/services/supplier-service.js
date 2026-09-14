@@ -1,5 +1,6 @@
 const { getPool } = require("../db/sqlserver");
 const mssql = require("mssql");
+const { publishEvent } = require("../utils/rabbitmq");
 
 async function listSuppliers(branch) {
     const pool = await getPool(branch);
@@ -28,61 +29,96 @@ async function createSupplier(branch, data) {
     if (checkExist.recordset.length > 0) {
       if (checkExist.recordset[0].TrangThai === 0) {
         // Reactivate soft-deleted supplier
-        await pool
-          .request()
-          .input("MaNCC", mssql.VarChar, data.maNCC)
-          .input("TenNCC", mssql.NVarChar, data.tenNCC)
-          .input("DienThoai", mssql.VarChar, data.dienThoai || null)
-          .input("DiaChi", mssql.NVarChar, data.diaChi || null)
-          .input("Email", mssql.VarChar, data.email || null)
-          .query("UPDATE dbo.NhaCungCap SET TenNCC = @TenNCC, DienThoai = @DienThoai, DiaChi = @DiaChi, Email = @Email, TrangThai = 1 WHERE MaNCC = @MaNCC");
+        await pool.request()
+          .input("MaNCC", mssql.VarChar(50), data.maNCC)
+          .input("TenNCC", mssql.NVarChar(150), data.tenNCC)
+          .input("DienThoai", mssql.VarChar(20), data.dienThoai || null)
+          .input("DiaChi", mssql.NVarChar(255), data.diaChi || null)
+          .input("Email", mssql.VarChar(100), data.email || null)
+          .input("TrangThai", mssql.Int, 1)
+          .execute("dbo.usp_Chung_DongBoNhaCungCap");
+
+        await publishEvent("master_data_sync", {
+          event: "supplier.created",
+          data
+        });
         return { message: "Nhà cung cấp đã được kích hoạt lại hoạt động" };
       } else {
         throw new Error("Mã nhà cung cấp đã tồn tại và đang hoạt động");
       }
     }
 
-    await pool
-      .request()
-      .input("MaNCC", mssql.VarChar, data.maNCC)
-      .input("TenNCC", mssql.NVarChar, data.tenNCC)
-      .input("DienThoai", mssql.VarChar, data.dienThoai || null)
-      .input("DiaChi", mssql.NVarChar, data.diaChi || null)
-      .input("Email", mssql.VarChar, data.email || null)
-      .query("INSERT INTO dbo.NhaCungCap (MaNCC, TenNCC, DienThoai, DiaChi, Email, TrangThai) VALUES (@MaNCC, @TenNCC, @DienThoai, @DiaChi, @Email, 1)");
+    await pool.request()
+      .input("MaNCC", mssql.VarChar(50), data.maNCC)
+      .input("TenNCC", mssql.NVarChar(150), data.tenNCC)
+      .input("DienThoai", mssql.VarChar(20), data.dienThoai || null)
+      .input("DiaChi", mssql.NVarChar(255), data.diaChi || null)
+      .input("Email", mssql.VarChar(100), data.email || null)
+      .input("TrangThai", mssql.Int, 1)
+      .execute("dbo.usp_Chung_DongBoNhaCungCap");
+
+    // 2. Publish event to MQ for branches
+    await publishEvent("master_data_sync", {
+      event: "supplier.created",
+      data
+    });
+
     return { message: "Tạo nhà cung cấp thành công" };
   }
 
 async function updateSupplier(branch, id, data) {
     const pool = await getPool(branch);
-    const result = await pool
-      .request()
-      .input("MaNCC", mssql.VarChar, id)
-      .input("TenNCC", mssql.NVarChar, data.tenNCC)
-      .input("DienThoai", mssql.VarChar, data.dienThoai || null)
-      .input("DiaChi", mssql.NVarChar, data.diaChi || null)
-      .input("Email", mssql.VarChar, data.email || null)
-      .query("UPDATE dbo.NhaCungCap SET TenNCC = @TenNCC, DienThoai = @DienThoai, DiaChi = @DiaChi, Email = @Email WHERE MaNCC = @MaNCC");
-    
-    if (result.rowsAffected[0] === 0) {
-      throw new Error("Không tìm thấy nhà cung cấp để cập nhật");
-    }
+    await pool.request()
+      .input("MaNCC", mssql.VarChar(50), id)
+      .input("TenNCC", mssql.NVarChar(150), data.tenNCC)
+      .input("DienThoai", mssql.VarChar(20), data.dienThoai || null)
+      .input("DiaChi", mssql.NVarChar(255), data.diaChi || null)
+      .input("Email", mssql.VarChar(100), data.email || null)
+      .input("TrangThai", mssql.Int, 1) // Keep active
+      .execute("dbo.usp_Chung_DongBoNhaCungCap");
+
+    // Publish MQ Event for sync
+    await publishEvent("master_data_sync", {
+      event: "supplier.updated",
+      data: { maNCC: id, ...data, active: 1 }
+    });
+
     return { message: "Cập nhật nhà cung cấp thành công" };
   }
 
 async function deleteSupplier(branch, id) {
+    // Get existing supplier data from origin branch to retain information when setting TrangThai = 0
     const pool = await getPool(branch);
+    const supplier = await pool.request().input("MaNCC", mssql.VarChar, id).query("SELECT * FROM dbo.NhaCungCap WHERE MaNCC = @MaNCC");
     
-    // Set TrangThai to 0 (Soft delete)
-    const result = await pool
-      .request()
-      .input("MaNCC", mssql.VarChar, id)
-      .query("UPDATE dbo.NhaCungCap SET TrangThai = 0 WHERE MaNCC = @MaNCC");
-
-    if (result.rowsAffected[0] === 0) {
+    if (supplier.recordset.length === 0) {
       throw new Error("Không tìm thấy nhà cung cấp để ngừng hoạt động");
     }
-    return { message: "Ngừng hoạt động nhà cung cấp thành công" };
+    const supData = supplier.recordset[0];
+
+    await pool.request()
+      .input("MaNCC", mssql.VarChar(50), id)
+      .input("TenNCC", mssql.NVarChar(150), supData.TenNCC)
+      .input("DienThoai", mssql.VarChar(20), supData.DienThoai || null)
+      .input("DiaChi", mssql.NVarChar(255), supData.DiaChi || null)
+      .input("Email", mssql.VarChar(100), supData.Email || null)
+      .input("TrangThai", mssql.Int, 0) // Soft delete
+      .execute("dbo.usp_Chung_DongBoNhaCungCap");
+
+    // Publish MQ event
+    await publishEvent("master_data_sync", {
+      event: "supplier.status_toggled",
+      data: { 
+          maNCC: id, 
+          tenNCC: supData.TenNCC,
+          dienThoai: supData.DienThoai,
+          diaChi: supData.DiaChi,
+          email: supData.Email,
+          active: 0 
+      }
+    });
+
+    return { message: "Xóa nhà cung cấp (Soft Delete) thành công" };
 }
 
 module.exports = {

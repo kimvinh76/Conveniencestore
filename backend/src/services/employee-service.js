@@ -1,25 +1,30 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 const PROCS = {
-  list: "dbo.usp_Local_DanhSachNhanVien",
-  create: "dbo.usp_Local_ThemNhanVien",
-  update: "dbo.usp_Local_CapNhatNhanVien",
-  delete: "dbo.usp_Local_XoaNhanVien",
+  listLocal: "dbo.usp_Local_DanhSachNhanVien",
+  listCentral: "dbo.usp_Central_DanhSachNhanVienToanBo",
+  createLocal: "dbo.usp_Local_ThemNhanVien",
+  createCentral: "dbo.usp_Central_ThemNhanVien",
+  updateLocal: "dbo.usp_Local_CapNhatNhanVien",
+  updateCentral: "dbo.usp_Central_CapNhatNhanVien",
+  deleteLocal: "dbo.usp_Local_XoaNhanVien",
+  deleteCentral: "dbo.usp_Central_XoaNhanVien",
 };
 
 async function listEmployeesByBranch(branchCode) {
   const pool = await getPool(branchCode);
-  const result = await pool.request().execute(PROCS.list);
+  if (branchCode === "CENTRAL") {
+    const result = await pool.request().execute(PROCS.listCentral);
+    return result.recordset;
+  }
+  const result = await pool.request().execute(PROCS.listLocal);
   return result.recordset;
 }
 
-async function listAllEmployeesFromCentral() {
-  const pool = await getPool("CENTRAL");
-  const result = await pool.request().execute("usp_Central_DanhSachNhanVienToanBo");
-  return result.recordset;
-}
 
 async function createEmployee(branchCode, payload) {
   const pool = await getPool(branchCode);
+  const proc = branchCode === "CENTRAL" ? PROCS.createCentral : PROCS.createLocal;
   const maNV = payload.MaNV || `${branchCode[0]}${String(Date.now()).slice(-4)}`;
   const rs = await pool
     .request()
@@ -28,12 +33,28 @@ async function createEmployee(branchCode, payload) {
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
     .input("Email", sql.VarChar(100), payload.Email || null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(PROCS.create);
-  return rs.recordset[0] || null;
+    .execute(proc);
+    
+  const createdEmployee = rs.recordset[0] || null;
+
+  // Sync to Branches via MQ
+  await publishEvent("master_data_sync", {
+    event: "employee.created",
+    data: { 
+      maNV, 
+      hoTen: payload.HoTen, 
+      chucVu: payload.ChucVu, 
+      email: payload.Email, 
+      branchCode 
+    }
+  });
+
+  return createdEmployee;
 }
 
 async function updateEmployee(branchCode, maNV, payload) {
   const pool = await getPool(branchCode);
+  const proc = branchCode === "CENTRAL" ? PROCS.updateCentral : PROCS.updateLocal;
   const rs = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
@@ -41,12 +62,27 @@ async function updateEmployee(branchCode, maNV, payload) {
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu !== undefined ? payload.ChucVu : null)
     .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(PROCS.update);
+    .execute(proc);
+    
+  // Sync to Branches via MQ
+  await publishEvent("master_data_sync", {
+    event: "employee.updated",
+    data: { 
+      maNV, 
+      hoTen: payload.HoTen !== undefined ? payload.HoTen : null, 
+      chucVu: payload.ChucVu !== undefined ? payload.ChucVu : null, 
+      email: payload.Email !== undefined ? payload.Email : null, 
+      branchCode 
+    }
+  });
+
   return rs.recordset[0];
 }
 
 async function deleteEmployee(branchCode, maNV) {
   const pool = await getPool(branchCode);
+  const proc = branchCode === "CENTRAL" ? PROCS.deleteCentral : PROCS.deleteLocal;
+  
   const beforeDelete = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
@@ -57,12 +93,16 @@ async function deleteEmployee(branchCode, maNV) {
   await pool.request()
     .input("MaNV", sql.VarChar(50), maNV)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(PROCS.delete);
+    .execute(proc);
 
-  // Đồng bộ khóa tài khoản trên Central (Ngoại trừ lỗi không tìm thấy tài khoản)
+  // Sync to Branches via MQ
+  await publishEvent("master_data_sync", {
+    event: "employee.deleted",
+    data: { maNV, branchCode }
+  });
+
   const accountService = require("./account-service");
   try {
-    // Phải tìm Tên đăng nhập (Username) dựa trên Mã NV trước khi khóa
     const centralPool = await getPool("CENTRAL");
     const accountLookup = await centralPool.request()
       .input("MaNV", sql.VarChar(50), maNV)
@@ -74,7 +114,7 @@ async function deleteEmployee(branchCode, maNV) {
     }
   } catch (err) {
     if (err.number !== 50002 && err.message !== "Account not found") {
-      console.error(`Lỗi khi khóa tài khoản liên kết của ${maNV}:`, err);
+      console.error(`Lỗi khi khóa tài khoản liên kết của ${maNV}:`, err.message);
     }
   }
 
@@ -83,7 +123,6 @@ async function deleteEmployee(branchCode, maNV) {
 
 module.exports = {
   listEmployeesByBranch,
-  listAllEmployeesFromCentral,
   createEmployee,
   updateEmployee,
   deleteEmployee

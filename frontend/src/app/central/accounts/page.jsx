@@ -37,7 +37,7 @@ export default function Page() {
 
   const loadEmployees = async () => {
     try {
-      const res = await apiFetch("/api/employees/all?branch=CENTRAL");
+      const res = await apiFetch("/api/employees?branch=CENTRAL");
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setError("Không thể tải danh sách nhân viên.");
@@ -49,7 +49,7 @@ export default function Page() {
   }, []);
 
   const openAddModal = () => {
-    setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", Quyen: "NHAN_VIEN", TrangThai: 1 });
+    setForm({ TenDangNhap: "", MatKhau: "", MaNV: "", TrangThai: 1 });
     openFormModal();
   };
 
@@ -66,7 +66,7 @@ export default function Page() {
       closeFormModal();
       loadAccounts();
     } catch (err) {
-      alert(`Lỗi: ${err.message || String(err)}`);
+      showToast(`Lỗi: ${err.message || String(err)}`, "error");
     }
   };
 
@@ -81,7 +81,7 @@ export default function Page() {
       });
       loadAccounts();
     } catch (err) {
-      alert(`Lỗi: ${err.message || String(err)}`);
+      showToast(`Lỗi: ${err.message || String(err)}`, "error");
     }
   };
 

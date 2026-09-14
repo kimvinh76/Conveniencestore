@@ -11,19 +11,20 @@ export default function CentralInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedBranch, setSelectedBranch] = useState("HANOI");
 
-  const loadInventory = async () => {
+  const load = async () => {
     setLoading(true);
     setError(null);
     try {
+      // LUÔN LẤY TỪ CENTRAL ĐỂ KIỂM TRA ĐỒNG BỘ
+      const invData = await apiFetch(`/api/inventory?branch=CENTRAL`);
+      const prodData = await apiFetch(`/api/products?branch=CENTRAL`);
 
-      // Chỉ gọi API cho 1 chi nhánh được chọn
-      const invData = await apiFetch(`/api/inventory?branch=${selectedBranch}`);
       const invArray = Array.isArray(invData) ? invData : [];
-
-      const prodData = await apiFetch(`/api/products?branch=${selectedBranch}`);
       const prodArray = Array.isArray(prodData) ? prodData : [];
 
-      const merged = invArray.map(item => {
+      const branchInvData = invArray.filter(i => i.branch === selectedBranch);
+
+      const merged = branchInvData.map(item => {
         const prod = prodArray.find(p => (p.productCode || p.MaSP) === item.productCode);
         return {
           ...item,
@@ -42,8 +43,8 @@ export default function CentralInventoryPage() {
   };
 
   useEffect(() => {
-    loadInventory().catch(() => { });
-  }, [selectedBranch]); // Gọi lại khi đổi chi nhánh
+    load().catch(() => {});
+  }, [selectedBranch]); // Chạy lại hàm load (có lấy all rồi filter) khi đổi nhánh
 
   const branches = ["HANOI", "HUE", "SAIGON"];
 

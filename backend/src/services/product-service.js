@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Chung_DanhSachHangHoaKemTonKho",
@@ -40,9 +41,11 @@ async function getProductByCode(branch, productCode) {
 }
 
 async function createProduct(payload) {
-  const pool = await getPool("CENTRAL");
   const { productCode, productName, unitPrice, description, imageUrl, unit, categoryCode, brandCode, barcode } = payload;
-  await pool.request()
+  
+  // 1. Thực thi SP trên Central để tạo Sản phẩm và Tồn kho mặc định (cho cả 3 chi nhánh tại CentralDB)
+  const poolCentral = await getPool("CENTRAL");
+  await poolCentral.request()
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TenHang", sql.NVarChar(100), productName)
     .input("Gia", sql.Decimal(10, 2), unitPrice)
@@ -53,13 +56,21 @@ async function createProduct(payload) {
     .input("MaTH", sql.VarChar(20), brandCode || null)
     .input("Barcode", sql.VarChar(50), barcode || null)
     .execute(PROCS.create);
+
+  // 2. Publish event to Message Queue
+  await publishEvent("master_data_sync", {
+    event: "product.created",
+    data: payload
+  });
+
   return { productCode, productName, unitPrice, description, imageUrl, unit, categoryCode, brandCode, barcode };
 }
 
 async function updateProduct(productCode, payload) {
-  const pool = await getPool("CENTRAL");
   const { productName, unitPrice, description, imageUrl, unit, active, categoryCode, brandCode, barcode } = payload;
-  await pool.request()
+  
+  const poolCentral = await getPool("CENTRAL");
+  await poolCentral.request()
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TenHang", sql.NVarChar(100), productName)
     .input("Gia", sql.Decimal(10, 2), unitPrice)
@@ -69,8 +80,14 @@ async function updateProduct(productCode, payload) {
     .input("MaDM", sql.VarChar(20), categoryCode || null)
     .input("MaTH", sql.VarChar(20), brandCode || null)
     .input("Barcode", sql.VarChar(50), barcode || null)
-    .input("TrangThai", sql.Int, active ? 1 : 0)
+    .input("TrangThai", sql.Int, active === undefined ? null : (active ? 1 : 0))
     .execute(PROCS.update);
+
+  await publishEvent("master_data_sync", {
+    event: "product.updated",
+    data: { productCode, ...payload }
+  });
+
   return { productCode, ...payload };
 }
 
@@ -80,6 +97,12 @@ async function toggleProductStatus(productCode, active) {
     .input("MaSP", sql.VarChar(50), productCode)
     .input("TrangThai", sql.Bit, active ? 1 : 0)
     .execute(PROCS.update);
+
+  await publishEvent("master_data_sync", {
+    event: "product.status_toggled",
+    data: { productCode, active }
+  });
+
   return { message: "Status updated" };
 }
 

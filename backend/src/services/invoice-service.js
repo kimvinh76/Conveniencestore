@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachHoaDon",
@@ -6,23 +7,23 @@ const PROCS = {
   create: "dbo.usp_Local_TaoHoaDonNhieuDong"
 };
 
-const formatDate = (dateVal) => {
-  if (!dateVal) return "";
+const formatInvoiceDate = (dateVal) => {
+  if (!dateVal) return null;
   const d = new Date(dateVal);
   if (isNaN(d.getTime())) return dateVal;
   const pad = (n) => String(n).padStart(2, "0");
-  const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  return `${dateStr} ${timeStr}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 };
 
 async function listInvoicesByBranch(branch) {
-
-
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   const rows = result.recordset || [];
-  return rows.map(r => ({ ...r, NgayTao: formatDate(r.NgayTao) }));
+
+  return rows.map(r => ({
+    ...r,
+    NgayTao: formatInvoiceDate(r.NgayTao)
+  }));
 }
 
 
@@ -31,7 +32,7 @@ async function getInvoiceDetails(branch, invoiceId) {
   const result = await pool.request()
     .input("MaHD", sql.VarChar(50), invoiceId)
     .execute(PROCS.details);
-  
+
   // Store mới usp_Local_ChiTietHoaDon trả về 2 kết quả (Multiple Recordsets)
   // - result.recordsets[0]: Chứa danh sách các món hàng (Chi tiết hóa đơn)
   // - result.recordsets[1]: Chứa danh sách các mã khuyến mãi đã được áp dụng cho hóa đơn này
@@ -76,6 +77,37 @@ async function createInvoice(payload) {
   request.input("DiemSuDung", sql.Int, diemSuDung || 0);
 
   await request.execute(PROCS.create);
+
+  // --- REPLICATION TO CENTRAL ---
+  if (branch !== "CENTRAL") {
+    await publishEvent("transaction_sync", {
+      event: "invoice.created",
+      branch,
+      data: {
+        maHD,
+        employeeId,
+        customerId: customerId || null,
+        note: note || "",
+        items: itemsPayload,
+        promos: promos || [],
+        diemSuDung: diemSuDung || 0
+      }
+    });
+  }
+
+  // --- REPLICATION OF CUSTOMER POINTS TO OTHER BRANCHES (P2P SYNC VIA MQ) ---
+  if (customerId) {
+    const finalAmount = payload.totalAmount || 0;
+    const diemCong = Math.floor(finalAmount / 10000);
+    const diemThayDoi = diemCong - (diemSuDung || 0);
+
+    if (diemThayDoi !== 0) {
+      await publishEvent("master_data_sync", {
+        event: "customer.points_updated",
+        data: { customerId, diemThayDoi }
+      });
+    }
+  }
 
   return { maHD, branch, customerId, totalAmount: payload.totalAmount };
 }

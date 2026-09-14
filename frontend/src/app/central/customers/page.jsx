@@ -77,7 +77,6 @@ export default function Page() {
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Central Console</p>
             <h1 className="text-3xl font-bold text-slate-900">Quản lý Khách hàng Toàn hệ thống</h1>
           </div>
-          <button className="btn-primary font-bold" onClick={() => { setForm({ customerId: "", fullName: "", phoneNumber: "" }); setIsEditing(false); openFormModal(); }}>+ Thêm Khách Hàng</button>
         </header>
 
         {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200">Lỗi: {error}</div>}

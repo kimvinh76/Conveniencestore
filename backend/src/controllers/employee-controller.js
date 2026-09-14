@@ -21,19 +21,6 @@ exports.listEmployees = async (req, res) => {
   }
 };
 
-exports.listAllEmployees = async (req, res) => {
-  try {
-    const branch = normalizeBranch(req.query.branch);
-    if (branch !== "CENTRAL") return res.status(400).json({ message: "branch must be CENTRAL" });
-    const rows = await employeeService.listAllEmployeesFromCentral();
-    res.json({ branch, count: rows.length, data: rows });
-  } catch (error) {
-    if (error.number && error.number >= 50000) {
-      return res.status(400).json({ message: error.message });
-    }
-    res.status(500).json({ message: error.message || "Lỗi hệ thống không xác định" });
-  }
-};
 
 exports.createEmployee = async (req, res) => {
   try {

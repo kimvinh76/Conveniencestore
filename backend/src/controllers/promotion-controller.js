@@ -3,7 +3,7 @@ const { normalizeBranch } = require("../config/branches");
 
 async function listPromotions(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch || "CENTRAL";
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || "CENTRAL";
     const data = await promotionService.listPromotions(branch);
     res.json(data);
   } catch (error) {
@@ -13,7 +13,7 @@ async function listPromotions(req, res, next) {
 
 async function listActivePromotions(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch || "CENTRAL";
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || "CENTRAL";
     const data = await promotionService.listActivePromotions(branch);
     res.json(data);
   } catch (error) {
@@ -23,7 +23,7 @@ async function listActivePromotions(req, res, next) {
 
 async function checkPromotion(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch;
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch);
     if (!branch || branch === "CENTRAL") {
       return res.status(400).json({ message: "branch must be a local store (HN, SG, HUE) to check promo" });
     }
@@ -40,7 +40,7 @@ async function checkPromotion(req, res, next) {
 
 async function createPromotion(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch || "CENTRAL";
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || "CENTRAL";
     if (branch !== "CENTRAL") {
       return res.status(403).json({ message: "Chỉ admin tại CENTRAL mới được tạo khuyến mãi!" });
     }
@@ -53,7 +53,7 @@ async function createPromotion(req, res, next) {
 
 async function updatePromotion(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch || "CENTRAL";
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || "CENTRAL";
     if (branch !== "CENTRAL") {
       return res.status(403).json({ message: "Chỉ admin tại CENTRAL mới được sửa khuyến mãi!" });
     }
@@ -67,7 +67,7 @@ async function updatePromotion(req, res, next) {
 
 async function deletePromotion(req, res, next) {
   try {
-    const branch = req.auth?.branch || req.query.branch || "CENTRAL";
+    const branch = normalizeBranch(req.query.branch) || normalizeBranch(req.auth?.branch) || "CENTRAL";
     if (branch !== "CENTRAL") {
       return res.status(403).json({ message: "Chỉ admin tại CENTRAL mới được xóa khuyến mãi!" });
     }

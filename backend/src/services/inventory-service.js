@@ -1,5 +1,6 @@
 const { sql, isMockMode, getPool } = require("../db/sqlserver");
 const mock = require("../data/mock-store");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Local_DanhSachTonKho",
@@ -7,12 +8,10 @@ const PROCS = {
 };
 
 async function listInventory(branch) {
-
-
   const pool = await getPool(branch);
   const result = await pool.request().execute(PROCS.list);
   return result.recordset.map(row => ({
-    branch: branch,
+    branch: branch === "CENTRAL" ? row.ChiNhanh : branch,
     productCode: row.MaSP,
     quantity: Number(row.SoLuongTon || 0)
   }));
@@ -22,23 +21,26 @@ async function listInventory(branch) {
 
 async function transferStockDistributed(payload) {
   if (isMockMode()) return mock.transferStock(payload);
-  const pool = await getPool("CENTRAL"); // Transaction phân tán gọi từ Central
-  const { fromBranch, toBranch, productCode, quantity, nguoiChuyen } = payload;
-
-  await pool.request()
-    .input("TuChiNhanh", sql.VarChar(10), fromBranch)
-    .input("DenChiNhanh", sql.VarChar(10), toBranch)
-    .input("MaSP", sql.VarChar(50), productCode)
-    .input("SoLuongChuyen", sql.Int, quantity)
-    .input("NguoiChuyen", sql.VarChar(50), nguoiChuyen || 'SYSTEM')
-    .execute(PROCS.transfer);
+  const { fromBranch, toBranch, items, nguoiChuyen } = payload;
+  const itemsJson = JSON.stringify(items);
+  
+  // We do NOT call `dbo.usp_Central_DieuChuyenKho` via Linked Server anymore.
+  // Instead, publish an event to MQ. The worker will handle executing local SPs on each DB.
+  await publishEvent("inventory_transfer", {
+    event: "inventory.transfer",
+    data: {
+      fromBranch,
+      toBranch,
+      itemsJson,
+      nguoiChuyen: nguoiChuyen || 'SYSTEM'
+    }
+  });
 
   return {
     status: "SUCCESS",
     fromBranch,
     toBranch,
-    productCode,
-    quantity,
+    items,
     nguoiChuyen,
     timestamp: new Date().toISOString()
   };

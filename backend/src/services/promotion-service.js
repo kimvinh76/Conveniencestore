@@ -1,4 +1,5 @@
 const { sql, getPool } = require("../db/sqlserver");
+const { publishEvent } = require("../utils/rabbitmq");
 
 const PROCS = {
   list: "dbo.usp_Central_DanhSachKhuyenMai",
@@ -49,6 +50,13 @@ async function createPromotion(payload) {
     .input("ChoPhepCongDon", sql.Bit, payload.ChoPhepCongDon === undefined ? 1 : payload.ChoPhepCongDon)
     .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? 1 : payload.TrangThai)
     .execute(PROCS.create);
+
+  // --- REPLICATION TO BRANCHES VIA MQ ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.created",
+    data: payload
+  });
+
   return payload;
 }
 
@@ -68,6 +76,13 @@ async function updatePromotion(promoCode, payload) {
     .input("ChoPhepCongDon", sql.Bit, payload.ChoPhepCongDon === undefined ? null : payload.ChoPhepCongDon)
     .input("TrangThai", sql.Bit, payload.TrangThai === undefined ? null : payload.TrangThai)
     .execute(PROCS.update);
+
+  // --- REPLICATION TO BRANCHES VIA MQ ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.updated",
+    data: { maKM: promoCode, ...payload }
+  });
+
   return { MaKM: promoCode, updated: true };
 }
 
@@ -76,6 +91,13 @@ async function deletePromotion(promoCode) {
   await pool.request()
     .input("MaKM", sql.VarChar(50), promoCode)
     .execute(PROCS.delete);
+
+  // --- REPLICATION TO BRANCHES VIA MQ (Soft delete) ---
+  await publishEvent("master_data_sync", {
+    event: "promotion.status_toggled",
+    data: { maKM: promoCode, trangThai: false }
+  });
+
   return { MaKM: promoCode, deleted: true };
 }
 
