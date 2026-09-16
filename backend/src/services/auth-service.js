@@ -59,36 +59,53 @@ function canAccessBranch(record, loginBranch) {
   return role === "NHAN_VIEN" || role === "ADMIN_CHI_NHANH";
 }
 
-async function findAccountInCentral(username) {
 
+async function findAccountForLogin(username, domainBranch = null) {
+  // Ưu tiên 1: Chọc thẳng vào nhánh do NGINX định tuyến (Subdomain Routing)
+  if (domainBranch && ["CENTRAL", "HANOI", "HUE", "SAIGON"].includes(domainBranch)) {
+    try {
+      const pool = await getPool(domainBranch);
+      const result = await pool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .execute("dbo.usp_Chung_DangNhap");
 
+      if (result.recordset.length > 0) {
+        return result.recordset[0];
+      }
+    } catch (err) {
+      console.warn(`[Auth] Lỗi kết nối DB ${domainBranch}:`, err.message);
+    }
+  }
 
-  const pool = await getPool("CENTRAL");
-  const result = await pool
-    .request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query(`
-      SELECT TOP 1
-        tk.TenDangNhap,
-        tk.MatKhau,
-        tk.MaNV,
-        tk.Quyen,
-        tk.TrangThai,
-        nv.HoTen,
-        nv.ChucVu,
-        nv.Email,
-        nv.ChiNhanh
-      FROM dbo.TaiKhoan tk
-      INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
-      WHERE tk.TenDangNhap = @TenDangNhap;
-    `);
+  // Ưu tiên 2 (Dự phòng): Nếu NGINX lỗi hoặc truy cập localhost:3001, quét Central
+  try {
+    const pool = await getPool("CENTRAL");
+    const result = await pool.request()
+      .input("TenDangNhap", sql.VarChar(50), username)
+      .execute("dbo.usp_Chung_DangNhap");
+    if (result.recordset.length > 0) return result.recordset[0];
+  } catch (err) {
+    console.warn(`[Auth] Không thể kết nối CENTRAL DB (${err.message}). Đang chuyển hướng tìm user '${username}' ở các chi nhánh cục bộ...`);
+  }
 
-  return result.recordset[0] || null;
-}
+  // Ưu tiên 3 (Dự phòng cuối cùng): Quét vòng lặp nếu Central sập và mất NGINX
+  const branches = ["SAIGON", "HANOI", "HUE"];
+  for (const branch of branches) {
+    try {
+      const pool = await getPool(branch);
+      const result = await pool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .execute("dbo.usp_Chung_DangNhap");
 
-async function findAccountForLogin(username) {
-  const record = await findAccountInCentral(username);
-  return record; // Trả thẳng kết quả từ DB, không bọc thêm { record, branch }
+      if (result.recordset.length > 0) {
+        return result.recordset[0];
+      }
+    } catch (branchErr) {
+      console.warn(`[Auth] Lỗi quét nhánh ${branch}:`, branchErr.message);
+    }
+  }
+
+  return null; // Không tìm thấy ở bất kỳ đâu
 }
 
 

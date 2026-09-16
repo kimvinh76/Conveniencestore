@@ -78,6 +78,7 @@ services:
 
   # 5. Node.js Backend
   backend:
+    profiles: ["production"]
     build: ./backend
     container_name: ddbms_backend
     ports:
@@ -138,6 +139,7 @@ services:
 
   # 6. Next.js Frontend
   frontend:
+    profiles: ["production"]
     build: ./frontend
     container_name: ddbms_frontend
     ports:
@@ -146,6 +148,16 @@ services:
       - NEXT_PUBLIC_API_BASE=http://localhost:3001
     depends_on:
       - backend
+
+  # 7. NGINX Reverse Proxy (Subdomain Routing)
+  nginx:
+    image: nginx:latest
+    container_name: ddbms_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
 
 # Named volumes — giữ data DB khi container bị xóa (docker compose down)
 volumes:

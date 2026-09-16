@@ -51,7 +51,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "username and password are required" });
     }
 
-    const account = await findAccountForLogin(username);
+    const domainBranch = req.headers['x-branch-name'] || null;
+    const account = await findAccountForLogin(username, domainBranch);
 
     if (!account) {
       return res.status(401).json({ message: "Invalid username or password" });
@@ -90,7 +91,8 @@ exports.login = async (req, res) => {
       user,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("[Login Error]", error.message);
+    return res.status(500).json({ message: "Hệ thống đang gặp sự cố, vui lòng thử lại sau!" });
   }
 };
 

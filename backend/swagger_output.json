@@ -34,6 +34,11 @@
         "description": "",
         "parameters": [
           {
+            "name": "x-branch-name",
+            "in": "header",
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "schema": {
@@ -155,35 +160,6 @@
         "responses": {
           "201": {
             "description": "Created"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/api/employees/all": {
-      "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "branch",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
           },
           "400": {
             "description": "Bad Request"
@@ -1644,6 +1620,13 @@
     "/api/categories/": {
       "get": {
         "description": "",
+        "parameters": [
+          {
+            "name": "branch",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1660,6 +1643,13 @@
     "/api/brands/": {
       "get": {
         "description": "",
+        "parameters": [
+          {
+            "name": "branch",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
