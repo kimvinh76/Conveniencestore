@@ -219,6 +219,13 @@ async function processMasterDataEvent(payload) {
             .execute("dbo.usp_Chung_CapNhatMatKhau");
           break;
           
+        case "account.role_updated":
+          await pool.request()
+            .input("MaNV", sql.VarChar(50), data.MaNV)
+            .input("Quyen", sql.NVarChar(50), data.Quyen)
+            .execute("dbo.usp_Chung_CapNhatQuyenTaiKhoan");
+          break;
+          
         // --- EMPLOYEE ---
         case "employee.created":
           await pool.request()
