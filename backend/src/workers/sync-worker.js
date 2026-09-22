@@ -292,15 +292,23 @@ async function processTransactionEvent(payload) {
         await centralReq.execute("dbo.usp_Central_DongBoHoaDon");
         break;
 
-      case "purchase_receipt.created":
+      case "purchase_receipt.created": {
+        // Map local keys (MaSP, SoLuong, DonGiaNhap/GiaNhap) to Central SP expected keys (productCode, quantity, price)
+        const mappedItems = data.items.map(item => ({
+          productCode: item.MaSP || item.productCode,
+          quantity: item.SoLuong || item.quantity,
+          price: item.GiaNhap || item.DonGiaNhap || item.price || 0
+        }));
+
         await centralPool.request()
           .input("MaPN", sql.VarChar(50), data.maPN)
           .input("ChiNhanhLap", sql.VarChar(10), branch)
           .input("GhiChu", sql.NVarChar(255), data.ghiChu || null)
           .input("MaNCC", sql.VarChar(50), data.maNCC || null)
-          .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(data.items))
+          .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(mappedItems))
           .execute("dbo.usp_Central_DongBoPhieuNhap");
         break;
+      }
 
       default:
         console.warn(`[Worker] Unhandled transaction event type: ${event}`);
