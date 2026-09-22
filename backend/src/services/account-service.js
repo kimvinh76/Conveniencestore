@@ -150,6 +150,36 @@ async function unlockAccount(username, branch) {
 }
 
 /**
+ * Đồng bộ Quyền tài khoản khi Chức vụ nhân viên thay đổi
+ */
+async function syncAccountRoleWithEmployee(maNV, chucVu, branch) {
+  const newRole =
+    chucVu === "Quản trị hệ thống" ? "ADMIN_TOAN_BO" :
+    chucVu === "Quản lý chi nhánh" ? "ADMIN_CHI_NHANH" :
+    "NHAN_VIEN";
+
+  const centralPool = await getPool("CENTRAL");
+  const rs = await centralPool.request()
+    .input("MaNV", sql.VarChar(50), maNV)
+    .input("Quyen", sql.NVarChar(50), newRole)
+    .execute("dbo.usp_Chung_CapNhatQuyenTaiKhoan");
+
+  if (rs.recordset && rs.recordset.length > 0) {
+    const updatedAccount = rs.recordset[0];
+    // Publish MQ to sync this role update to branch
+    if (branch && branch !== "CENTRAL") {
+      await publishEvent("master_data_sync", {
+        event: "account.role_updated",
+        data: { MaNV: maNV, Quyen: newRole, TenDangNhap: updatedAccount.TenDangNhap, ChiNhanh: branch }
+      });
+    }
+    return updatedAccount;
+  }
+  return null;
+}
+
+
+/**
  * Reset password — Admin gọi, force mật khẩu mới (CENTRAL + sync Branch)
  */
 async function resetPassword(username, newPassword, branch) {
@@ -240,6 +270,7 @@ module.exports = {
   lockAccount,
   unlockAccount,
   resetPassword,
+  syncAccountRoleWithEmployee,
 
   // Branch functions
   listAccountsByBranch,

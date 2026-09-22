@@ -56,56 +56,41 @@ function canAccessBranch(record, loginBranch) {
     return false;
   }
 
+  if (loginBranch !== record.ChiNhanh) {
+    return false;
+  }
+
   return role === "NHAN_VIEN" || role === "ADMIN_CHI_NHANH";
 }
 
 
 async function findAccountForLogin(username, domainBranch = null) {
-  // Ưu tiên 1: Chọc thẳng vào nhánh do NGINX định tuyến (Subdomain Routing)
-  if (domainBranch && ["CENTRAL", "HANOI", "HUE", "SAIGON"].includes(domainBranch)) {
+  // BẮT BUỘC phải có domainBranch (tức là đi qua NGINX). Nếu không có, CHẶN!
+  if (!domainBranch) {
+    throw new Error("ACCESS_DENIED: Bắt buộc đăng nhập thông qua tên miền ảo của chi nhánh (vd: saigon.ddbms.local). Không hỗ trợ truy cập trực tiếp qua localhost.");
+  }
+
+  // Khóa cứng bảo mật: Chỉ quét đúng Database của tên miền đó
+  if (["CENTRAL", "HANOI", "HUE", "SAIGON"].includes(domainBranch)) {
     try {
       const pool = await getPool(domainBranch);
       const result = await pool.request()
         .input("TenDangNhap", sql.VarChar(50), username)
         .execute("dbo.usp_Chung_DangNhap");
 
-      if (result.recordset.length > 0) {
-        return result.recordset[0];
-      }
+      if (result.recordset.length > 0) return result.recordset[0];
     } catch (err) {
       console.warn(`[Auth] Lỗi kết nối DB ${domainBranch}:`, err.message);
-    }
-  }
-
-  // Ưu tiên 2 (Dự phòng): Nếu NGINX lỗi hoặc truy cập localhost:3001, quét Central
-  try {
-    const pool = await getPool("CENTRAL");
-    const result = await pool.request()
-      .input("TenDangNhap", sql.VarChar(50), username)
-      .execute("dbo.usp_Chung_DangNhap");
-    if (result.recordset.length > 0) return result.recordset[0];
-  } catch (err) {
-    console.warn(`[Auth] Không thể kết nối CENTRAL DB (${err.message}). Đang chuyển hướng tìm user '${username}' ở các chi nhánh cục bộ...`);
-  }
-
-  // Ưu tiên 3 (Dự phòng cuối cùng): Quét vòng lặp nếu Central sập và mất NGINX
-  const branches = ["SAIGON", "HANOI", "HUE"];
-  for (const branch of branches) {
-    try {
-      const pool = await getPool(branch);
-      const result = await pool.request()
-        .input("TenDangNhap", sql.VarChar(50), username)
-        .execute("dbo.usp_Chung_DangNhap");
-
-      if (result.recordset.length > 0) {
-        return result.recordset[0];
+      if (err.message.includes("Connection") || err.message.includes("Could not find stored procedure") || err.message.includes("network-related")) {
+        const error = new Error(`Hệ thống tại chi nhánh ${domainBranch} đang bảo trì hoặc mất kết nối. Vui lòng thử lại sau.`);
+        error.statusCode = 503;
+        throw error;
       }
-    } catch (branchErr) {
-      console.warn(`[Auth] Lỗi quét nhánh ${branch}:`, branchErr.message);
     }
   }
 
-  return null; // Không tìm thấy ở bất kỳ đâu
+  // Trả về luôn, chặn tài khoản đi lạc tên miền
+  return null;
 }
 
 

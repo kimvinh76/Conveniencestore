@@ -51,25 +51,25 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "username and password are required" });
     }
 
-    const domainBranch = req.headers['x-branch-name'] || null;
+    const domainBranch = req.headers["x-branch-name"] || null;
     const account = await findAccountForLogin(username, domainBranch);
 
     if (!account) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Sai tên đăng nhập hoặc mật khẩu" });
     }
 
     const branch = account.ChiNhanh; // Lấy trực tiếp từ record SQL
     const passwordOk = await verifyPassword(password, account.MatKhau);
     if (!passwordOk) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Sai tên đăng nhập hoặc mật khẩu" });
     }
 
-    if (!canAccessBranch(account, branch)) {
-      return res.status(403).json({ message: "This account cannot access the resolved branch" });
+    if (!canAccessBranch(account, domainBranch)) {
+      return res.status(403).json({ message: "Tài khoản không có quyền truy cập tên miền (chi nhánh) này" });
     }
 
     if (Number(account.TrangThai) === 0) {
-      return res.status(403).json({ message: "Account is locked" });
+      return res.status(403).json({ message: "Tài khoản đang bị khóa" });
     }
 
     const user = buildAuthUser(account, branch);
@@ -86,13 +86,18 @@ exports.login = async (req, res) => {
     res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions());
 
     return res.json({
-      message: "Login successful",
+      message: "Đăng nhập thành công",
       branch: branch,
       user,
     });
   } catch (error) {
     console.error("[Login Error]", error.message);
-    return res.status(500).json({ message: "Hệ thống đang gặp sự cố, vui lòng thử lại sau!" });
+
+    if (error.message.startsWith("ACCESS_DENIED")) {
+      return res.status(403).json({ message: error.message.replace("ACCESS_DENIED: ", "") });
+    }
+
+    return res.status(500).json({ message: "Hệ thống (Database) đang gặp sự cố kết nối, vui lòng thử lại sau!" });
   }
 };
 

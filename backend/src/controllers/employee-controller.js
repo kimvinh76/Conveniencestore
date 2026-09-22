@@ -85,6 +85,17 @@ exports.updateEmployee = async (req, res) => {
     }
 
     const { employeeId } = req.params;
+    
+    // FETCH CURRENT EMPLOYEE TO CHECK PERMISSIONS
+    const employeesList = await employeeService.listEmployeesByBranch(branch);
+    const currentEmployee = employeesList.find(e => e.MaNV === employeeId);
+    if (!currentEmployee) {
+      return res.status(404).json({ message: "Không tìm thấy nhân viên" });
+    }
+
+    if (req.auth?.role === "ADMIN_CHI_NHANH" && currentEmployee.ChucVu === "Quản lý chi nhánh") {
+      return res.status(403).json({ message: "Lỗi bảo mật: Quản lý chi nhánh không được phép sửa đổi thông tin của Quản lý chi nhánh (bao gồm chính mình)!" });
+    }
 
     const HoTen = req.body.HoTen !== undefined ? String(req.body.HoTen).trim() : undefined;
     const ChucVu = req.body.ChucVu !== undefined ? String(req.body.ChucVu).trim() : undefined;
@@ -119,6 +130,13 @@ exports.updateEmployee = async (req, res) => {
     };
     
     const data = await employeeService.updateEmployee(branch, employeeId, payload);
+    
+    // Đồng bộ lại quyền Tài khoản nếu chức vụ thay đổi
+    if (ChucVu !== undefined && ChucVu !== currentEmployee.ChucVu) {
+      const accountService = require("../services/account-service");
+      await accountService.syncAccountRoleWithEmployee(employeeId, ChucVu, branch);
+    }
+    
     res.json({ message: "Employee updated", data });
   } catch (error) {
     if (error.number && error.number >= 50000) {

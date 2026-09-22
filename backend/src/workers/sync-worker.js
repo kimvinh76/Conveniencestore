@@ -221,33 +221,30 @@ async function processMasterDataEvent(payload) {
           
         // --- EMPLOYEE ---
         case "employee.created":
-          const procCreateEmp = branch === "CENTRAL" ? "dbo.usp_Central_ThemNhanVien" : "dbo.usp_Local_ThemNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
             .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procCreateEmp);
+            .execute("dbo.usp_Chung_ThemNhanVien");
           break;
           
         case "employee.updated":
-          const procUpdateEmp = branch === "CENTRAL" ? "dbo.usp_Central_CapNhatNhanVien" : "dbo.usp_Local_CapNhatNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
             .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procUpdateEmp);
+            .execute("dbo.usp_Chung_CapNhatNhanVien");
           break;
           
         case "employee.deleted":
-          const procDeleteEmp = branch === "CENTRAL" ? "dbo.usp_Central_XoaNhanVien" : "dbo.usp_Local_XoaNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procDeleteEmp);
+            .execute("dbo.usp_Chung_XoaNhanVien");
           break;
 
         default:

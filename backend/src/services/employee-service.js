@@ -1,30 +1,20 @@
 const { sql, getPool } = require("../db/sqlserver");
 const { publishEvent } = require("../utils/rabbitmq");
 const PROCS = {
-  listLocal: "dbo.usp_Local_DanhSachNhanVien",
-  listCentral: "dbo.usp_Central_DanhSachNhanVienToanBo",
-  createLocal: "dbo.usp_Local_ThemNhanVien",
-  createCentral: "dbo.usp_Central_ThemNhanVien",
-  updateLocal: "dbo.usp_Local_CapNhatNhanVien",
-  updateCentral: "dbo.usp_Central_CapNhatNhanVien",
-  deleteLocal: "dbo.usp_Local_XoaNhanVien",
-  deleteCentral: "dbo.usp_Central_XoaNhanVien",
+  list: "dbo.usp_Chung_DanhSachNhanVien",
+  create: "dbo.usp_Chung_ThemNhanVien",
+  update: "dbo.usp_Chung_CapNhatNhanVien",
+  delete: "dbo.usp_Chung_XoaNhanVien",
 };
 
 async function listEmployeesByBranch(branchCode) {
   const pool = await getPool(branchCode);
-  if (branchCode === "CENTRAL") {
-    const result = await pool.request().execute(PROCS.listCentral);
-    return result.recordset;
-  }
-  const result = await pool.request().execute(PROCS.listLocal);
+  const result = await pool.request().execute(PROCS.list);
   return result.recordset;
 }
 
-
 async function createEmployee(branchCode, payload) {
   const pool = await getPool(branchCode);
-  const proc = branchCode === "CENTRAL" ? PROCS.createCentral : PROCS.createLocal;
   const maNV = payload.MaNV || `${branchCode[0]}${String(Date.now()).slice(-4)}`;
   const rs = await pool
     .request()
@@ -33,7 +23,7 @@ async function createEmployee(branchCode, payload) {
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu)
     .input("Email", sql.VarChar(100), payload.Email || null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(proc);
+    .execute(PROCS.create);
     
   const createdEmployee = rs.recordset[0] || null;
 
@@ -54,7 +44,6 @@ async function createEmployee(branchCode, payload) {
 
 async function updateEmployee(branchCode, maNV, payload) {
   const pool = await getPool(branchCode);
-  const proc = branchCode === "CENTRAL" ? PROCS.updateCentral : PROCS.updateLocal;
   const rs = await pool
     .request()
     .input("MaNV", sql.VarChar(50), maNV)
@@ -62,7 +51,7 @@ async function updateEmployee(branchCode, maNV, payload) {
     .input("ChucVu", sql.NVarChar(80), payload.ChucVu !== undefined ? payload.ChucVu : null)
     .input("Email", sql.VarChar(100), payload.Email !== undefined ? payload.Email : null)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(proc);
+    .execute(PROCS.update);
     
   // Sync to Branches via MQ
   await publishEvent("master_data_sync", {
@@ -81,7 +70,6 @@ async function updateEmployee(branchCode, maNV, payload) {
 
 async function deleteEmployee(branchCode, maNV) {
   const pool = await getPool(branchCode);
-  const proc = branchCode === "CENTRAL" ? PROCS.deleteCentral : PROCS.deleteLocal;
   
   const beforeDelete = await pool
     .request()
@@ -93,7 +81,7 @@ async function deleteEmployee(branchCode, maNV) {
   await pool.request()
     .input("MaNV", sql.VarChar(50), maNV)
     .input("ChiNhanh", sql.VarChar(10), branchCode)
-    .execute(proc);
+    .execute(PROCS.delete);
 
   // Sync to Branches via MQ
   await publishEvent("master_data_sync", {

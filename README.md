@@ -6,70 +6,76 @@ Dự án phát triển một hệ thống quản lý chuỗi cửa hàng tiện 
 - **Frontend:** Next.js (React), TailwindCSS.
 - **Backend:** Node.js, Express.js.
 - **Database:** Microsoft SQL Server (Thiết kế phân mảnh ngang).
+- **Message Broker:** RabbitMQ (Xử lý đồng bộ dữ liệu bất đồng bộ).
+- **Reverse Proxy / Routing:** NGINX (Định tuyến thông minh qua Subdomain).
 - **Infrastructure:** Docker & Docker Compose (Giả lập môi trường phân tán hoàn chỉnh).
-- **Testing:** Postman, Newman, Automated API Testing.
 
 ---
 
 ## 👨‍💻 Vai Trò & Đóng Góp Trong Dự Án (My Contributions)
 Trong dự án này, tôi đóng vai trò là **Fullstack / Backend & Data Engineer**, chịu trách nhiệm thiết kế kiến trúc lõi và xây dựng hệ thống từ con số không. Dưới đây là các công việc chính tôi đã thực hiện:
 
-### 1. Kiến trúc Cơ sở Dữ liệu Phân tán (Distributed Database Architecture)
-- Xây dựng sơ đồ cơ sở dữ liệu phân tán với 4 Node độc lập: `CENTRAL` (Tổng bộ - Node tổng hợp), `HANOI`, `HUE`, `SAIGON` (Các chi nhánh).
-- Áp dụng kỹ thuật **Phân mảnh ngang (Horizontal Partitioning)** dựa trên mã chi nhánh (`ChiNhanh`) để chia tách dữ liệu Hóa Đơn, Phiếu Nhập, Tồn Kho và Tài Khoản.
-- Viết và tối ưu hóa hàng loạt **Stored Procedures**, Triggers và Views cho từng Node DB để đảm bảo tính toàn vẹn dữ liệu.
+### 1. Kiến trúc Cơ sở Dữ liệu Phân tán & Định Tuyến Động (Dynamic Routing)
+- Áp dụng kỹ thuật **Phân mảnh ngang (Horizontal Partitioning)** dựa trên mã chi nhánh (`ChiNhanh`).
+- Xây dựng hệ thống **Subdomain Routing với NGINX**: Cấu hình 4 tên miền ảo (`central.ddbms.local`, `saigon.ddbms.local`, `hanoi.ddbms.local`, `hue.ddbms.local`) trỏ về NGINX Reverse Proxy.
+- NGINX tự động đánh dấu người dùng thuộc chi nhánh nào (Gắn cờ Header `X-Branch-Name`) và chuyển tiếp xuống Backend.
+- Tự động hóa hoàn toàn luồng Đăng nhập: Người dùng không cần phải chọn Server khi đăng nhập như các ứng dụng truyền thống. Backend Node.js tự động chọc đúng vào Database tương ứng thông qua NGINX Header.
 
-### 2. Backend & Cơ chế Đồng bộ Dữ liệu (Backend & Data Sync)
-- Phát triển hệ thống RESTful API bằng **Node.js & Express.js**, xử lý toàn bộ nghiệp vụ (Auth, Bán hàng, Nhập kho, Quản lý Nhân sự, Tích điểm Khuyến mãi).
-- **Đột phá về Kiến trúc (Refactoring):** Nhận thấy hạn chế của việc dùng SQL Server Linked Servers truyền thống trong môi trường Cloud/Docker, tôi đã chủ động thiết kế lại cơ chế **Đồng bộ dữ liệu theo thời gian thực ở tầng Ứng dụng (Application-Level Real-time Sync)**. 
-- Backend Node.js giờ đây tự động điều phối các giao dịch đa nhánh (Ví dụ: Khi tạo một Phiếu nhập hoặc hóa đơn ở Chi nhánh, Backend sẽ tự động đẩy bản sao lưu lên Central DB ngay lập tức mà không phụ thuộc vào SQL Replication), giúp hệ thống có khả năng chịu lỗi (Fault Tolerance) cực tốt.
+### 2. Xử lý Đồng bộ Dữ liệu Tốc độ cao (Message Broker & Real-time Sync)
+- Nhận thấy những điểm thắt cổ chai (bottleneck) của SQL Server Linked Servers truyền thống khi tải cao, tôi đã chuyển đổi kiến trúc đồng bộ từ mức cơ sở dữ liệu sang mức Ứng dụng (Application-Level Sync).
+- Tích hợp **RabbitMQ** để xử lý các Event phân tán. Bất cứ khi nào Chi nhánh có giao dịch (nhập kho, bán hàng), một sự kiện (Message) sẽ được đẩy vào Hàng đợi (Queue) của RabbitMQ.
+- Các Background Workers (Sync Worker) chạy ngầm sẽ tiêu thụ Message này và tiến hành đồng bộ lên Server Trung tâm (Central DB) một cách bất đồng bộ (Asynchronous), đảm bảo hiệu năng của các API không bị gián đoạn và cam kết tính chịu lỗi (Fault Tolerance) cực tốt.
 
-### 3. Docker & Triển khai Hạ tầng (Docker & Infrastructure)
-- Container hóa (Containerization) toàn bộ ứng dụng bằng **Docker**.
-- Cấu hình `docker-compose` tối ưu: Tự động khởi tạo 4 Database độc lập từ các file script migration (`central.sql`, `hanoi.sql`, `hue.sql`, `saigon.sql`) ngay khi hệ thống boot.
-- Giải quyết bài toán cấp phát bộ nhớ để chạy 4 DB song song trên cùng 1 container SQL Server ảo, tối ưu hóa tài nguyên so với việc chạy máy ảo truyền thống.
-
-### 4. Kiểm thử Tự động (Automated API Testing)
-- Xây dựng kịch bản kiểm thử (Test Automation) cho toàn bộ các luồng API bằng **Postman** và **Newman**.
-- Viết các test scripts bằng Node.js (`test-db.js`, `test-pn-schema.js`, `sync-accounts.js`...) để tự động giả lập luồng dữ liệu (Data-driven testing), xác thực tính toàn vẹn và độ lệch pha của dữ liệu giữa Central và các Chi nhánh sau các giao dịch phân tán phức tạp.
+### 3. Docker, Auto-Migration & Triển khai Hạ tầng
+- Cấu hình `docker-compose.yml` cực kỳ chuyên nghiệp với **Docker Profiles** (Tách bạch giữa môi trường Development và Production).
+- Xây dựng cơ chế **Auto-Migration tương tự Flyway**: Các file Bash Script (`init-*.sh`) có khả năng theo dõi Checksum của các file `.sql`. Khi chạy hệ thống, nếu có kịch bản SQL mới, Docker sẽ đợi Database khởi động (ONLINE) và tự động apply file `.sql` mới vào Database mà không làm mất dữ liệu cũ.
 
 ---
 
 ## ⚙️ Hướng Dẫn Cài Đặt & Chạy Dự Án (How to Run)
 
-Dự án hỗ trợ 2 chế độ chạy phù hợp cho cả mục đích test nhanh và mục đích phát triển (Development).
+Dự án yêu cầu cài đặt **Tên miền ảo** vào file `hosts` của hệ điều hành trước khi khởi chạy.
 
-### Cách 1: Triển khai nhanh (Full Docker)
-*Chỉ cần 1 lệnh duy nhất để dựng toàn bộ Backend, Frontend và 4 Database.*
+### Bước 1: Cấu hình tên miền ảo (Bắt buộc)
+Mở file `hosts` của hệ điều hành (Đường dẫn Windows: `C:\Windows\System32\drivers\etc\hosts`) bằng quyền Administrator và thêm 4 dòng sau vào cuối file:
+```text
+127.0.0.1   saigon.ddbms.local
+127.0.0.1   hanoi.ddbms.local
+127.0.0.1   hue.ddbms.local
+127.0.0.1   central.ddbms.local
+```
 
-1. Đảm bảo máy tính đã cài đặt **Docker Desktop** (và đang chạy).
-2. Mở Terminal tại thư mục gốc của dự án.
-3. Khởi chạy hệ thống:
+### Bước 2: Khởi chạy dự án (Chọn 1 trong 2 chế độ)
+
+#### Chế độ 1: Lập trình (Development Mode) 
+*Ở chế độ này, Docker chỉ chạy Database, RabbitMQ và NGINX. Bạn chạy trực tiếp Frontend/Backend ở Local Terminal để code tự động cập nhật (Hot-Reload) khi chỉnh sửa.*
+
+> **⚠️ LƯU Ý QUAN TRỌNG:** Hệ thống yêu cầu đăng nhập **bắt buộc thông qua tên miền ảo**. Truy cập `http://localhost:3000` sẽ bị từ chối ở bước đăng nhập. Vui lòng hoàn tất Bước 1 (Cấu hình file `hosts`) trước khi khởi chạy.
+
+1. Khởi động Hạ tầng Core (Nginx, SQL, RabbitMQ):
    ```bash
-   docker compose up --build
+   docker compose up -d
    ```
-4. Quá trình khởi tạo Database lần đầu sẽ mất khoảng 30s - 1 phút. Sau khi Terminal hiển thị `Backend API running on port 5000`, truy cập Web tại: `http://localhost:3000`
-
-### Cách 2: Chế độ Phát triển (Hybrid Mode - Khuyên dùng cho Developer)
-*Chế độ này giữ Database chạy trong Docker nhưng chạy Frontend/Backend trực tiếp ở Local máy tính để tận dụng tính năng Hot-reload khi sửa code.*
-
-1. **Khởi động riêng cụm Database:**
-   ```bash
-   docker compose up database -d
-   ```
-2. **Khởi động Backend:** (Mở Terminal mới)
+2. Mở Terminal mới, khởi động Backend:
    ```bash
    cd backend
-   npm install
    npm run dev
    ```
-3. **Khởi động Frontend:** (Mở Terminal mới)
+3. Mở Terminal mới, khởi động Frontend:
    ```bash
    cd frontend
-   npm install
    npm run dev
    ```
-4. Truy cập Web tại: `http://localhost:3000`
+4. Truy cập web **bắt buộc** qua tên miền ảo (Ví dụ: `http://saigon.ddbms.local`). Đăng nhập bằng tài khoản của đúng chi nhánh đó.
+#### Chế độ 2: Trình diễn / Chạy thực tế (Production Profile)
+*Chỉ với 1 dòng lệnh, Docker sẽ ôm trọn 100% dự án (bao gồm cả Node.js Frontend và Backend) chạy ngầm hoàn toàn.*
+
+```bash
+docker compose --profile production up -d
+```
+Quá trình khởi tạo lần đầu sẽ mất khoảng 30s. Sau đó mở trình duyệt và truy cập **bắt buộc** qua tên miền ảo (vd: `http://saigon.ddbms.local`). Đăng nhập qua `localhost:3000` sẽ bị hệ thống từ chối.
+
+*(Lưu ý: Nếu cần thay đổi cấu trúc SQL, hãy bỏ file `.sql` vào thư mục `database/migration/docker_updates/`, sau đó gõ `docker compose restart sql-saigon sql-hanoi sql-hue sql-central` để hệ thống tự nạp (Auto-Migration) mà không mất dữ liệu).*
 
 ---
 
@@ -77,11 +83,11 @@ Dự án hỗ trợ 2 chế độ chạy phù hợp cho cả mục đích test n
 
 Hệ thống bảo mật phân quyền cứng (RBAC) theo từng node chi nhánh. *Mật khẩu mặc định cho tất cả tài khoản dưới đây là: `123456`*
 
-| Vai Trò | Chi Nhánh | Tên Đăng Nhập | Tính Năng Nổi Bật |
+| Vai Trò | Chi Nhánh (Truy cập) | Tên Đăng Nhập | Tính Năng Nổi Bật |
 | :--- | :--- | :--- | :--- |
-| **Quản trị toàn bộ** | Central (Tổng bộ) | `admin_central` | Xem báo cáo tổng hợp toàn chuỗi, Quản lý tài khoản toàn bộ. |
-| **Quản trị chi nhánh** | Hà Nội | `admin_hanoi` | Quản trị độc lập DB Hà Nội, xem doanh thu HN. |
-| **Quản trị chi nhánh** | Huế | `admin_hue` | Quản trị độc lập DB Huế, xem doanh thu Huế. |
-| **Quản trị chi nhánh** | Sài Gòn | `admin_saigon` | Quản trị độc lập DB Sài Gòn, xem doanh thu SG. |
+| **Quản trị toàn chuỗi** | `central.ddbms.local` | `admin_central` | Xem báo cáo tổng hợp toàn chuỗi, Quản lý tài khoản toàn bộ. |
+| **Quản trị chi nhánh** | `hanoi.ddbms.local` | `admin_hanoi` | Quản trị độc lập DB Hà Nội, xem doanh thu HN. |
+| **Quản trị chi nhánh** | `hue.ddbms.local` | `admin_hue` | Quản trị độc lập DB Huế, xem doanh thu Huế. |
+| **Quản trị chi nhánh** | `saigon.ddbms.local` | `admin_saigon` | Quản trị độc lập DB Sài Gòn, xem doanh thu SG. |
 
-*(Lưu ý: Tài khoản của chi nhánh nào chỉ có thể thao tác (Bán hàng, Nhập kho) trên dữ liệu của chi nhánh đó. Central không được phép bán hàng).*
+*(Lưu ý: Mỗi tài khoản Quản trị Chi nhánh chỉ đăng nhập được vào đúng tên miền ảo của chi nhánh đó. Nếu truy cập sai tên miền, hệ thống sẽ báo sai thông tin).*
