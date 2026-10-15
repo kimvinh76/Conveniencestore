@@ -22,7 +22,7 @@ export default function BranchEmployeeTable({ employees, onEdit, onDelete, canMa
               <td>{emp.ChucVu}</td>
               <td>{emp.Email}</td>
               <td className="text-center">
-                {(emp.TrangThai === true || emp.TrangThai === 1) ? (
+                {Number(emp.TrangThai) === 1 ? (
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                     Đang làm việc
                   </span>
@@ -34,7 +34,7 @@ export default function BranchEmployeeTable({ employees, onEdit, onDelete, canMa
               </td>
               {canManage && (
                 <td className="text-right whitespace-nowrap">
-                  {(emp.TrangThai === true || emp.TrangThai === 1) ? (
+                  {Number(emp.TrangThai) === 1 ? (
                     <>
                       <button className="text-blue-600 mr-4 font-semibold hover:text-blue-800" onClick={() => onEdit(emp)}>Sửa</button>
                       <button className="text-red-600 font-semibold hover:text-red-800" onClick={() => onDelete(emp)}>Xóa</button>

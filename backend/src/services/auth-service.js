@@ -56,39 +56,41 @@ function canAccessBranch(record, loginBranch) {
     return false;
   }
 
+  if (loginBranch !== record.ChiNhanh) {
+    return false;
+  }
+
   return role === "NHAN_VIEN" || role === "ADMIN_CHI_NHANH";
 }
 
-async function findAccountInCentral(username) {
 
+async function findAccountForLogin(username, domainBranch = null) {
+  // BẮT BUỘC phải có domainBranch (tức là đi qua NGINX). Nếu không có, CHẶN!
+  if (!domainBranch) {
+    throw new Error("ACCESS_DENIED: Bắt buộc đăng nhập thông qua tên miền ảo của chi nhánh (vd: saigon.ddbms.local). Không hỗ trợ truy cập trực tiếp qua localhost.");
+  }
 
+  // Khóa cứng bảo mật: Chỉ quét đúng Database của tên miền đó
+  if (["CENTRAL", "HANOI", "HUE", "SAIGON"].includes(domainBranch)) {
+    try {
+      const pool = await getPool(domainBranch);
+      const result = await pool.request()
+        .input("TenDangNhap", sql.VarChar(50), username)
+        .execute("dbo.usp_Chung_DangNhap");
 
-  const pool = await getPool("CENTRAL");
-  const result = await pool
-    .request()
-    .input("TenDangNhap", sql.VarChar(50), username)
-    .query(`
-      SELECT TOP 1
-        tk.TenDangNhap,
-        tk.MatKhau,
-        tk.MaNV,
-        tk.Quyen,
-        tk.TrangThai,
-        nv.HoTen,
-        nv.ChucVu,
-        nv.Email,
-        nv.ChiNhanh
-      FROM dbo.TaiKhoan tk
-      INNER JOIN dbo.NhanVien nv ON nv.MaNV = tk.MaNV
-      WHERE tk.TenDangNhap = @TenDangNhap;
-    `);
+      if (result.recordset.length > 0) return result.recordset[0];
+    } catch (err) {
+      console.warn(`[Auth] Lỗi kết nối DB ${domainBranch}:`, err.message);
+      if (err.message.includes("Connection") || err.message.includes("Could not find stored procedure") || err.message.includes("network-related")) {
+        const error = new Error(`Hệ thống tại chi nhánh ${domainBranch} đang bảo trì hoặc mất kết nối. Vui lòng thử lại sau.`);
+        error.statusCode = 503;
+        throw error;
+      }
+    }
+  }
 
-  return result.recordset[0] || null;
-}
-
-async function findAccountForLogin(username) {
-  const record = await findAccountInCentral(username);
-  return record; // Trả thẳng kết quả từ DB, không bọc thêm { record, branch }
+  // Trả về luôn, chặn tài khoản đi lạc tên miền
+  return null;
 }
 
 

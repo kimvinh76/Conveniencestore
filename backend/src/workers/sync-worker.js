@@ -219,35 +219,39 @@ async function processMasterDataEvent(payload) {
             .execute("dbo.usp_Chung_CapNhatMatKhau");
           break;
           
+        case "account.role_updated":
+          await pool.request()
+            .input("MaNV", sql.VarChar(50), data.MaNV)
+            .input("Quyen", sql.NVarChar(50), data.Quyen)
+            .execute("dbo.usp_Chung_CapNhatQuyenTaiKhoan");
+          break;
+          
         // --- EMPLOYEE ---
         case "employee.created":
-          const procCreateEmp = branch === "CENTRAL" ? "dbo.usp_Central_ThemNhanVien" : "dbo.usp_Local_ThemNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
             .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procCreateEmp);
+            .execute("dbo.usp_Chung_ThemNhanVien");
           break;
           
         case "employee.updated":
-          const procUpdateEmp = branch === "CENTRAL" ? "dbo.usp_Central_CapNhatNhanVien" : "dbo.usp_Local_CapNhatNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("HoTen", sql.NVarChar(120), data.hoTen)
             .input("ChucVu", sql.NVarChar(80), data.chucVu)
             .input("Email", sql.VarChar(100), data.email || null)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procUpdateEmp);
+            .execute("dbo.usp_Chung_CapNhatNhanVien");
           break;
           
         case "employee.deleted":
-          const procDeleteEmp = branch === "CENTRAL" ? "dbo.usp_Central_XoaNhanVien" : "dbo.usp_Local_XoaNhanVien";
           await pool.request()
             .input("MaNV", sql.VarChar(50), data.maNV)
             .input("ChiNhanh", sql.VarChar(10), data.branchCode)
-            .execute(procDeleteEmp);
+            .execute("dbo.usp_Chung_XoaNhanVien");
           break;
 
         default:
@@ -288,15 +292,23 @@ async function processTransactionEvent(payload) {
         await centralReq.execute("dbo.usp_Central_DongBoHoaDon");
         break;
 
-      case "purchase_receipt.created":
+      case "purchase_receipt.created": {
+        // Map local keys (MaSP, SoLuong, DonGiaNhap/GiaNhap) to Central SP expected keys (productCode, quantity, price)
+        const mappedItems = data.items.map(item => ({
+          productCode: item.MaSP || item.productCode,
+          quantity: item.SoLuong || item.quantity,
+          price: item.GiaNhap || item.DonGiaNhap || item.price || 0
+        }));
+
         await centralPool.request()
           .input("MaPN", sql.VarChar(50), data.maPN)
           .input("ChiNhanhLap", sql.VarChar(10), branch)
           .input("GhiChu", sql.NVarChar(255), data.ghiChu || null)
           .input("MaNCC", sql.VarChar(50), data.maNCC || null)
-          .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(data.items))
+          .input("ItemsJson", sql.NVarChar(sql.MAX), JSON.stringify(mappedItems))
           .execute("dbo.usp_Central_DongBoPhieuNhap");
         break;
+      }
 
       default:
         console.warn(`[Worker] Unhandled transaction event type: ${event}`);

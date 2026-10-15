@@ -15,6 +15,16 @@ done
 DB_NAME="CentralDB"
 BASE_SQL="/usr/config/central.sql"
 
+# Đợi Database user khởi động xong (tránh lỗi Cannot open database lúc mới boot)
+for i in {1..30}; do
+    DB_STATE=$(/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -h -1 -W -Q "SET NOCOUNT ON; SELECT state_desc FROM sys.databases WHERE name = '$DB_NAME'" 2>/dev/null | tr -d '[:space:]' | grep -v "rowsaffected")
+    if [ -z "$DB_STATE" ] || [ "$DB_STATE" == "ONLINE" ]; then
+        break
+    fi
+    echo "Đang đợi $DB_NAME chuyển sang trạng thái ONLINE (hiện tại: $DB_STATE)..."
+    sleep 2
+done
+
 # 2. Kiểm tra Database tồn tại chưa (Nếu chưa có mới nạp base.sql)
 DB_EXISTS=$(/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -h -1 -W -Q "SET NOCOUNT ON; SELECT database_id FROM sys.databases WHERE name = '$DB_NAME'")
 

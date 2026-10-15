@@ -64,7 +64,7 @@ export default function Page() {
       await apiFetch(`/api/employees/${employeeToDelete}?branch=${selectedBranch}`, { method: "DELETE" });
       closeDeleteModal();
       showNotification(`Đã xóa nhân viên ${employeeToDelete} thành công`, "success");
-      load();
+      setTimeout(() => load(), 300);
     } catch (err) { showNotification(err.message, "error"); }
   };
 
@@ -77,7 +77,8 @@ export default function Page() {
       await apiFetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       showNotification(isEditing ? "Cập nhật nhân viên thành công" : "Thêm nhân viên mới thành công", "success");
       closeFormModal();
-      load();
+      // Đợi RabbitMQ đồng bộ lên Central DB (Eventual Consistency)
+      setTimeout(() => load(), 300);
     } catch (err) {
       showNotification(err.message, "error");
     }

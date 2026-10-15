@@ -31,7 +31,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT pn.MaPN, pn.NgayNhap, pn.GhiChu, pn.MaNCC, pn.ChiNhanhLap, 
+    SELECT pn.MaPN, pn.NgayNhap, pn.GhiChu, pn.MaNCC, pn.ChiNhanh AS ChiNhanhLap, 
            ncc.TenNCC,
            ISNULL((SELECT SUM(SoLuong * DonGiaNhap) FROM dbo.ChiTietPhieuNhap WHERE MaPN = pn.MaPN), 0) as TongTien
     FROM dbo.PhieuNhap pn

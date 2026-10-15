@@ -26,7 +26,7 @@ exports.createEmployee = async (req, res) => {
   try {
     const branch = normalizeBranch(req.query.branch);
     if (!branch) return res.status(400).json({ message: "Valid branch in query string is required" });
-    
+
     if (req.auth?.role !== "ADMIN_TOAN_BO" && req.auth?.branch !== branch) {
       return res.status(403).json({ message: "Lỗi bảo mật: Admin chi nhánh không được thao tác trên chi nhánh khác!" });
     }
@@ -64,7 +64,7 @@ exports.createEmployee = async (req, res) => {
       ChucVu,
       Email: Email || null
     };
-    
+
     const data = await employeeService.createEmployee(branch, payload);
     res.status(201).json({ message: "Employee created", data });
   } catch (error) {
@@ -86,6 +86,17 @@ exports.updateEmployee = async (req, res) => {
 
     const { employeeId } = req.params;
 
+    // FETCH CURRENT EMPLOYEE TO CHECK PERMISSIONS
+    const employeesList = await employeeService.listEmployeesByBranch(branch);
+    const currentEmployee = employeesList.find(e => e.MaNV === employeeId);
+    if (!currentEmployee) {
+      return res.status(404).json({ message: "Không tìm thấy nhân viên" });
+    }
+
+    if (req.auth?.role === "ADMIN_CHI_NHANH" && currentEmployee.ChucVu === "Quản lý chi nhánh") {
+      return res.status(403).json({ message: "Lỗi bảo mật: Quản lý chi nhánh không được phép sửa đổi thông tin của Quản lý chi nhánh (bao gồm chính mình)!" });
+    }
+
     const HoTen = req.body.HoTen !== undefined ? String(req.body.HoTen).trim() : undefined;
     const ChucVu = req.body.ChucVu !== undefined ? String(req.body.ChucVu).trim() : undefined;
     const Email = req.body.Email !== undefined ? String(req.body.Email).trim() : undefined;
@@ -96,6 +107,15 @@ exports.updateEmployee = async (req, res) => {
     }
     const validTitles = ["Quản trị hệ thống", "Quản lý chi nhánh", "Nhân viên bán hàng", "Nhân viên kho"];
     const branchAdminAllowedTitles = ["Nhân viên bán hàng", "Nhân viên kho"];
+
+
+
+    // Cấm mọi người tự sửa chức vụ của chính mình
+    if (ChucVu !== undefined && req.auth?.employeeId === employeeId) {
+      return res.status(403).json({
+        message: "Không được phép tự thay đổi chức vụ của chính mình"
+      });
+    }
 
     if (ChucVu === "") {
       return res.status(400).json({ message: "Chức vụ không được để trống" });
@@ -117,8 +137,15 @@ exports.updateEmployee = async (req, res) => {
       ChucVu,
       Email
     };
-    
+
     const data = await employeeService.updateEmployee(branch, employeeId, payload);
+
+    // Đồng bộ lại quyền Tài khoản nếu chức vụ thay đổi
+    if (ChucVu !== undefined && ChucVu !== currentEmployee.ChucVu) {
+      const accountService = require("../services/account-service");
+      await accountService.syncAccountRoleWithEmployee(employeeId, ChucVu, branch);
+    }
+
     res.json({ message: "Employee updated", data });
   } catch (error) {
     if (error.number && error.number >= 50000) {
@@ -142,8 +169,8 @@ exports.deleteEmployee = async (req, res) => {
     res.json({ message: "Employee deleted", data });
   } catch (error) {
     if (
-      error.message.includes("not found") || 
-      error.message.includes("không tìm thấy") || 
+      error.message.includes("not found") ||
+      error.message.includes("không tìm thấy") ||
       (error.number && error.number >= 50000)
     ) {
       return res.status(400).json({ message: error.message });

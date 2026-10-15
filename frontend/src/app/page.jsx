@@ -57,10 +57,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = (e) => {
-    e.preventDefault();
-    alert("Vui lòng liên hệ với Quản lý chi nhánh hoặc Quản trị viên hệ thống để được cấp lại mật khẩu (Mật khẩu mặc định: 123456aA@).");
-  };
 
   if (!ready) {
     return (
